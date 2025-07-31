@@ -30,20 +30,20 @@ This happened because:
 - Added deployment troubleshooting guide
 
 ### 4. Created Deployment Check Script
-- `check_deployment.py` - Verifies all required files are present
+- `app.py` - Main Streamlit application
 
 ## 📋 Files Modified
 
 1. **`.gitignore`** - Commented out model file exclusions
 2. **`predict.py`** - Added robust model loading and error handling
 3. **`app.py`** - Added graceful error handling and user feedback
-4. **`check_deployment.py`** - New deployment verification script
+4. **`app.py`** - Main Streamlit application with feedback system
 
 ## 🚀 Deployment Steps
 
 ### 1. Verify Files Are Present
 ```bash
-python check_deployment.py
+streamlit run app.py
 ```
 
 ### 2. Commit All Changes
@@ -103,4 +103,4 @@ If you continue to have issues:
 1. Check the Streamlit Cloud logs
 2. Verify all files are in your repository
 3. Ensure the model files are not corrupted
-4. Try the deployment check script: `python check_deployment.py` 
+4. Try running the app locally: `streamlit run app.py` 

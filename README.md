@@ -46,8 +46,8 @@ archive/
 ├── model.py              # CNN model architecture
 ├── predict.py            # Prediction functions
 ├── train.py              # Training script
-├── test_model.py         # Model evaluation script
 ├── utils.py              # Data loading utilities
+├── retrain_model.py      # Model retraining with feedback
 ├── requirements.txt      # Python dependencies
 ├── model.pth            # Trained PyTorch model weights
 ├── real_vs_fake.keras   # Alternative Keras model
@@ -288,7 +288,7 @@ st.markdown("""
 
 1. **CUDA Out of Memory**:
    ```bash
-   # Reduce batch size in train.py
+   # Reduce batch size in retrain_model.py
    BATCH_SIZE = 16  # Instead of 32
    ```
 

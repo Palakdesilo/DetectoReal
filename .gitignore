@@ -241,4 +241,38 @@ Thumbs.db
 # Keep the dataset structure but ignore the actual image files
 real_vs_fake/**/*.jpg
 real_vs_fake/**/*.jpeg
-real_vs_fake/**/*.png 
+real_vs_fake/**/*.png
+
+# Development and testing files
+test_model.py
+test_feedback.py
+check_deployment.py
+
+# Documentation files
+FEEDBACK_GUIDE.md
+DEPLOYMENT_GUIDE.md
+
+# Model files
+model_backup.pth
+model_retrained.pth
+real_vs_fake.keras
+real_vs_fake.h5
+
+# Data and feedback files
+feedback_data/
+real_vs_fake/
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files
+myenv/
+.env
+.venv/ 
