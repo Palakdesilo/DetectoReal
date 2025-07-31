@@ -381,4 +381,6 @@ For support and questions:
 
 ---
 
-**Note**: This model is for educational and research purposes. Always verify results with additional methods for critical applications. 
+**Note**: This model is for educational and research purposes. Always verify results with additional methods for critical applications.
+
+This file is from when the project was first created and may not be up to date. 

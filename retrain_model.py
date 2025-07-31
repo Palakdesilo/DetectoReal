@@ -143,6 +143,8 @@ def retrain_model_with_feedback():
         backup_original = input("Do you want to replace the original model? (y/n): ").lower()
         if backup_original == 'y':
             # Backup original model
+            if os.path.exists('model_backup.pth'):
+                os.remove('model_backup.pth')  # Remove existing backup
             if os.path.exists('model.pth'):
                 os.rename('model.pth', 'model_backup.pth')
                 print("📦 Original model backed up as 'model_backup.pth'")
