@@ -372,7 +372,7 @@ st.markdown("""
     }
 
     .stButton > button:hover {
-        background: var(--accent-blue);
+        background: linear-gradient(135deg, #805ad5, #6b46c1);
         transform: translateY(-1px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
     }
@@ -575,7 +575,8 @@ if uploaded_file is not None:
         
         # Display image
         image = Image.open(uploaded_file)
-        st.image(image, width=300, caption="Uploaded Image")
+        resized_image = image.resize((150, 150))
+        st.image(resized_image, caption="Uploaded Image")
         
         # Get prediction
         als = st.session_state.automatic_learning_system
