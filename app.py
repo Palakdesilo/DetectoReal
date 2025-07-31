@@ -650,25 +650,25 @@ if uploaded_file is not None:
                         if feedback_result['should_retrain']:
                             st.markdown("""
                             <div class="message message-warning">
-                                🔄 Ready for automatic retraining!
+                                🔄 Ready for continuous model improvement!
                             </div>
                             """, unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Retrain Model", key="retrain_btn", use_container_width=True):
-            with st.spinner("🔄 Retraining model..."):
+        if st.button("🔄 Improve Model", key="retrain_btn", use_container_width=True):
+            with st.spinner("🔄 Continuously improving model..."):
                 als = st.session_state.automatic_learning_system
                 success = als.trigger_retraining(method="rlhf")
                 if success:
                     st.markdown("""
                     <div class="message message-success">
-                        🎉 Model retraining completed successfully! The model has improved based on your feedback.
+                        🎉 Model continuously improved! The existing model has been enhanced based on your feedback.
                     </div>
                     """, unsafe_allow_html=True)
                 else:
                     st.markdown("""
                     <div class="message message-error">
-                        ❌ Retraining failed. Please try again or check system status.
+                        ❌ Continuous improvement failed. Please try again or check system status.
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -694,8 +694,8 @@ else:
         </div>
         <div class="feature-item">
             <div class="feature-icon">🤖</div>
-            <h4>Machine Learning</h4>
-            <p>Continuous learning from user feedback with RLHF technology.</p>
+            <h4>Continuous Learning</h4>
+            <p>Existing model continuously improves from user feedback with RLHF technology.</p>
         </div>
         <div class="feature-item">
             <div class="feature-icon">⚡</div>

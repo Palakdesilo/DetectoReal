@@ -183,17 +183,17 @@ class AutomaticLearningSystem:
             return True
     
     def _retrain_model(self, method):
-        """Background retraining process"""
+        """Background retraining process for continuous improvement"""
         try:
             start_time = datetime.now()
             
             if method == "rlhf":
                 success = run_rlhf_training()
-                method_name = "RLHF"
+                method_name = "RLHF Continuous Improvement"
             else:
                 from retrain_model import retrain_model_with_feedback
                 success = retrain_model_with_feedback()
-                method_name = "Standard"
+                method_name = "Standard Continuous Improvement"
             
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
@@ -202,26 +202,26 @@ class AutomaticLearningSystem:
                 self.last_retrain_time = end_time
                 self.feedback_count = 0  # Reset counter
                 
-                # Reload model
+                # Reload improved model
                 self.model = load_prediction_model()
                 
-                print(f"✅ {method_name} retraining completed in {duration:.1f}s")
-                print("🔄 Model updated and ready for new predictions!")
+                print(f"✅ {method_name} completed in {duration:.1f}s")
+                print("🔄 Model continuously improved and ready for new predictions!")
                 
                 # Record retraining event
                 self.learning_history.append({
                     "timestamp": end_time.isoformat(),
-                    "event": "retraining_completed",
+                    "event": "continuous_improvement_completed",
                     "method": method_name,
                     "duration_seconds": duration,
                     "feedback_used": self.feedback_count
                 })
                 
             else:
-                print(f"❌ {method_name} retraining failed")
+                print(f"❌ {method_name} failed")
                 
         except Exception as e:
-            print(f"❌ Error during retraining: {e}")
+            print(f"❌ Error during continuous improvement: {e}")
     
     def test_same_image_prediction(self, image, expected_prediction):
         """
@@ -285,7 +285,7 @@ class AutomaticLearningSystem:
         # Analyze learning history
         if self.learning_history:
             corrections = [e for e in self.learning_history if "user_correction" in e]
-            retrainings = [e for e in self.learning_history if e.get("event") == "retraining_completed"]
+            retrainings = [e for e in self.learning_history if e.get("event") == "continuous_improvement_completed"]
             
             stats.update({
                 "total_corrections": len(corrections),

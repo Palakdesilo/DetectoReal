@@ -4,12 +4,12 @@ RLHF Training Script for DetectoReal
 Reinforcement Learning with Human Feedback for image authenticity detection
 """
 
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-import torch.nn.functional as F
-from torchvision import transforms
+import torch # type: ignore 
+import torch.nn as nn # type: ignore 
+import torch.optim as optim # type: ignore 
+from torch.utils.data import Dataset, DataLoader # type: ignore 
+import torch.nn.functional as F # type: ignore 
+from torchvision import transforms # type: ignore 
 from PIL import Image
 import json
 import os
@@ -43,27 +43,27 @@ class RLHFTrainer:
             print(message)
     
     def initialize_models(self, base_model_path='model.pth'):
-        """Initialize policy and reward models"""
-        self.log("🔄 Initializing RLHF models...")
+        """Initialize policy and reward models from existing model"""
+        self.log("🔄 Loading existing model for continuous improvement...")
         
-        # Load base model
+        # Load existing model
         base_model = SimpleCNN(num_classes=2)
         try:
             base_model.load_state_dict(torch.load(base_model_path, map_location=self.device))
-            self.log("✅ Loaded base model successfully")
+            self.log("✅ Loaded existing model successfully for improvement")
         except Exception as e:
-            self.log(f"❌ Error loading base model: {e}")
+            self.log(f"❌ Error loading existing model: {e}")
             return False
         
-        # Initialize policy and reward models
+        # Initialize policy and reward models from existing model
         self.policy_model = PolicyModel(base_model).to(self.device)
         self.reward_model = RewardModel(base_model).to(self.device)
         
-        # Initialize optimizers with different learning rates
-        self.policy_optimizer = optim.Adam(self.policy_model.parameters(), lr=1e-4, weight_decay=1e-5)
-        self.reward_optimizer = optim.Adam(self.reward_model.parameters(), lr=1e-4, weight_decay=1e-5)
+        # Initialize optimizers with different learning rates for incremental learning
+        self.policy_optimizer = optim.Adam(self.policy_model.parameters(), lr=5e-5, weight_decay=1e-5)  # Lower LR for incremental learning
+        self.reward_optimizer = optim.Adam(self.reward_model.parameters(), lr=5e-5, weight_decay=1e-5)
         
-        self.log("✅ RLHF models initialized")
+        self.log("✅ Models initialized for continuous improvement")
         return True
     
     def train_reward_model(self, feedback_data, epochs=20, batch_size=8):
@@ -235,15 +235,16 @@ class RLHFTrainer:
         self.log("🎉 RLHF training completed successfully!")
         return True
     
-    def save_models(self, policy_path='model_rlhf.pth', reward_path='reward_model.pth'):
-        """Save the trained models"""
+    def save_models(self, policy_path='model.pth', reward_path='reward_model.pth'):
+        """Save the improved models, updating existing model in place"""
         try:
+            # Update the existing model with improved weights
             torch.save(self.policy_model.model.state_dict(), policy_path)
             torch.save(self.reward_model.state_dict(), reward_path)
-            self.log(f"✅ Models saved: {policy_path}, {reward_path}")
+            self.log(f"✅ Model continuously improved and saved: {policy_path}")
             return True
         except Exception as e:
-            self.log(f"❌ Error saving models: {e}")
+            self.log(f"❌ Error saving improved model: {e}")
             return False
     
     def get_training_summary(self):
@@ -389,25 +390,17 @@ def main():
     )
     
     if success:
-        # Save models
+        # Save improved model in place
         trainer.save_models()
         
         # Show training summary
         summary = trainer.get_training_summary()
-        print(f"\n📈 Training Summary:")
+        print(f"\n📈 Continuous Improvement Summary:")
         print(f"Total epochs: {summary['total_epochs']}")
         print(f"Final reward loss: {summary['final_reward_loss']:.4f}")
         print(f"Final policy loss: {summary['final_policy_loss']:.4f}")
         
-        # Backup original model
-        if os.path.exists('model.pth'):
-            backup_path = f'model_backup_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pth'
-            os.rename('model.pth', backup_path)
-            print(f"📦 Original model backed up as {backup_path}")
-        
-        # Replace with RLHF model
-        os.rename('model_rlhf.pth', 'model.pth')
-        print("✅ Model updated with RLHF training")
+        print("✅ Model continuously improved with user feedback")
         
         return True
     
