@@ -41,25 +41,20 @@ def load_model():
         if model_path is None:
             raise FileNotFoundError(f"Model file not found. Tried paths: {possible_paths}")
         
-        print(f"Loading model from: {model_path}")
-        
         model = SimpleCNN(num_classes=2)
         model.load_state_dict(torch.load(model_path, map_location=device))
         model.to(device)
         model.eval()
         
-        print("✅ Model loaded successfully!")
         return model
         
     except Exception as e:
-        print(f"❌ Error loading model: {e}")
         raise e
 
 # Initialize model
 try:
     model = load_model()
 except Exception as e:
-    print(f"Failed to load model: {e}")
     model = None
 
 # === TRANSFORM ===
@@ -140,27 +135,14 @@ def get_detailed_analysis(image):
         else:
             confidence_level = "Low"
         
-        # Generate analysis message
-        if prediction == "fake":
-            if confidence > 0.8:
-                message = "Strong indicators of AI generation detected"
-            elif confidence > 0.6:
-                message = "Moderate signs of AI generation found"
-            else:
-                message = "Weak indicators of AI generation"
-        else:
-            if confidence > 0.8:
-                message = "Strong indicators of authentic image"
-            elif confidence > 0.6:
-                message = "Moderate signs of authentic image"
-            else:
-                message = "Weak indicators of authentic image"
-
-    return {
-        "prediction": prediction,
-        "confidence": confidence,
-        "confidence_level": confidence_level,
-        "fake_confidence": fake_confidence,
-        "real_confidence": real_confidence,
-        "message": message
-    }
+        return {
+            "prediction": prediction,
+            "confidence": confidence,
+            "confidence_level": confidence_level,
+            "fake_confidence": fake_confidence,
+            "real_confidence": real_confidence,
+            "analysis": {
+                "fake_percentage": round(fake_confidence * 100, 1),
+                "real_percentage": round(real_confidence * 100, 1)
+            }
+        }

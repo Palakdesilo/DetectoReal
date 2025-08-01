@@ -289,6 +289,8 @@ def load_prediction_model():
         st.error("Please ensure the model.pth file is included in your deployment.")
         return None, None
 
+
+
 # Load the prediction functions
 predict_function, detailed_analysis_function = load_prediction_model()
 
@@ -308,6 +310,9 @@ if predict_function is None or detailed_analysis_function is None:
     - Check that the file size is reasonable for deployment
     """)
     st.stop()
+
+# Clear the loading message and show the main interface
+st.empty()
 
 # === HEADER SECTION ===
 st.markdown("""
