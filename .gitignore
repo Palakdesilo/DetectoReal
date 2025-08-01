@@ -257,6 +257,8 @@ model_backup.pth
 model_retrained.pth
 real_vs_fake.keras
 real_vs_fake.h5
+model_backup_20250731_140408.pth
+model_backup_20250731_140900.pth
 
 # Data and feedback files
 feedback_data/
@@ -276,3 +278,6 @@ __pycache__/
 myenv/
 .env
 .venv/ 
+
+
+retrain_model.py 

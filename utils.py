@@ -1,7 +1,7 @@
 # utils.py
 
-import torch
-from torchvision import transforms
+import torch # type: ignore
+from torchvision import transforms # type: ignore
 from PIL import Image
 import os
 import numpy as np
