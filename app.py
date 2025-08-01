@@ -57,33 +57,38 @@ st.markdown("""
         color: var(--text-primary) !important;
     }
     
-    /* Header styling - topmost layer with maximum specificity */
-    div[data-testid="stMarkdown"] h1,
-    .stMarkdown h1,
-    h1 {
-        color: #ffffff !important;
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-        margin-bottom: 1rem !important;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-        text-align: center !important;
-        z-index: 9999 !important;
-        position: relative !important;
-        opacity: 1 !important;
-    }
+         /* Header styling - topmost layer with maximum specificity */
+     div[data-testid="stMarkdown"] h1,
+     .stMarkdown h1,
+     h1 {
+         color: #ffffff !important;
+         font-size: 2.5rem !important;
+         font-weight: 700 !important;
+         margin-bottom: 1rem !important;
+         text-align: center !important;
+         z-index: 9999 !important;
+         position: relative !important;
+         opacity: 1 !important;
+         -webkit-text-fill-color: #ffffff !important;
+         -webkit-text-stroke: 0 !important;
+         text-shadow: none !important;
+     }
     
-    /* Header paragraph styling - topmost layer */
-    div[data-testid="stMarkdown"] p,
-    .stMarkdown p,
-    p {
-        color: #f8fafc !important;
-        font-size: 1.125rem !important;
-        font-weight: 500 !important;
-        text-align: center !important;
-        z-index: 9999 !important;
-        position: relative !important;
-        opacity: 1 !important;
-    }
+         /* Header paragraph styling - topmost layer */
+     div[data-testid="stMarkdown"] p,
+     .stMarkdown p,
+     p {
+         color: #ffffff !important;
+         font-size: 1.125rem !important;
+         font-weight: 500 !important;
+         text-align: center !important;
+         z-index: 9999 !important;
+         position: relative !important;
+         opacity: 1 !important;
+         -webkit-text-fill-color: #ffffff !important;
+         -webkit-text-stroke: 0 !important;
+         text-shadow: none !important;
+     }
     
     /* Force header container to stay on top */
     .stMarkdown > div:first-child {
@@ -100,17 +105,19 @@ st.markdown("""
         opacity: 1 !important;
     }
     
-    .main-title {
-        color: #ffffff !important;
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-        margin-bottom: 1rem !important;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-        text-align: center !important;
-        z-index: 9999 !important;
-        position: relative !important;
-        opacity: 1 !important;
-    }
+         .main-title {
+         color: #ffffff !important;
+         font-size: 2.5rem !important;
+         font-weight: 700 !important;
+         margin-bottom: 1rem !important;
+         text-align: center !important;
+         z-index: 9999 !important;
+         position: relative !important;
+         opacity: 1 !important;
+         -webkit-text-fill-color: #ffffff !important;
+         -webkit-text-stroke: 0 !important;
+         text-shadow: none !important;
+     }
     
     .main-description {
         color: #f8fafc !important;
@@ -124,7 +131,7 @@ st.markdown("""
     
     /* Header banner styling */
     .header-banner {
-        padding: 1.5rem 2rem !important;
+        padding: 1.5rem 2rem 6rem 2rem; !important;
         border-radius: 12px !important;
         margin-bottom: 2rem !important;
         display: flex !important;
@@ -136,16 +143,15 @@ st.markdown("""
         opacity: 1 !important;
     }
     
-    .header-banner h1 {
-        color: #ffffff !important;
-        font-size: 2.5rem !important;
-        font-weight: 700 !important;
-        margin: 0 !important;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-        opacity: 1 !important;
-        -webkit-text-fill-color: #ffffff !important;
-        -webkit-text-stroke: 0 !important;
-    }
+         .header-banner h1 {
+         color: #ffffff !important;
+         font-size: 2.5rem !important;
+         font-weight: 700 !important;
+         margin: 0 !important;
+         opacity: 1 !important;
+         -webkit-text-fill-color: #ffffff !important;
+         -webkit-text-stroke: 0 !important;
+     }
     
     /* Additional white text enforcement */
     .header-banner h1,
@@ -155,10 +161,50 @@ st.markdown("""
         -webkit-text-fill-color: #ffffff !important;
     }
     
-    .header-banner span {
-        font-size: 2.5rem !important;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) !important;
-        opacity: 1 !important;
+         .header-banner span {
+         font-size: 2.5rem !important;
+         opacity: 1 !important;
+     }
+</style>
+""", unsafe_allow_html=True)
+
+# === CUSTOM CSS FOR FILE UPLOADER ===
+st.markdown("""
+<style>
+    .stFileUploader {
+        border: 2px dashed #667eea;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(102, 126, 234, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .stFileUploader:hover {
+        border-color: #764ba2;
+        background: rgba(118, 75, 162, 0.05);
+        transform: translateY(-2px);
+    }
+
+    .upload-note {
+        color: #555;
+        font-size: 0.9rem;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+
+    .upload-title {
+        text-align: center;
+        color: #333;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    /* Background color override for entire app */
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Inter', sans-serif;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -521,46 +567,25 @@ st.markdown("""
 
 # Header
 st.markdown("""
-<div class="header-banner" style="
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    z-index: 9999;
-    position: relative;
-    opacity: 1 !important;
+<div style="
+    padding: 1.5rem 2rem 7rem 2rem;
+    margin: 0;
+    text-align: center;
 ">
-    <span style="font-size: 2.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">🕵️‍♂️</span>
-    <h1 style="
-        color: #ffffff !important;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 0;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        opacity: 1 !important;
-        -webkit-text-fill-color: #ffffff !important;
-        -webkit-text-stroke: 0 !important;
-    ">DetectoReal</h1>
-</div>
-<div style="text-align: center; margin-bottom: 2rem;">
-    <p style="color: white; font-size: 1.125rem; margin: 0;">An AI-powered tool to detect fake vs real images.</p>
+    <div style="color: #ffffff; font-size: 2.5rem; font-weight: 700; margin-bottom: 0.2rem;">🕵️‍♂️ DetectoReal</div>
+    <div style="color: #ffffff; font-size: 1.2rem;">An AI-powered tool to detect fake vs real images.</div>
 </div>
 """, unsafe_allow_html=True)
+
+
 
 # Upload section
-st.markdown("""
-<div>
-    <h3 style="margin-bottom: 1rem;">📁 Upload Your Image</h3>
-</div>
-""", unsafe_allow_html=True)
+
 
 uploaded_file = st.file_uploader(
-    "Choose an image file", 
-    type=['png', 'jpg', 'jpeg'],
-    label_visibility="collapsed"
+    "Choose an image file (JPG, JPEG, PNG)",
+    type=["jpg", "jpeg", "png"],
+    help="Upload any image to analyze if it's real or AI-generated"
 )
 
 # Analysis section
@@ -720,10 +745,46 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# Footer
+
+
+# Footer with matching theme
 st.markdown("""
-<div style="text-align: center; margin-top: 3rem; padding: 1.5rem; border-top: 1px solid #4a5568;">
-    <p style="font-weight: 600; margin-bottom: 0.5rem;">🔍 DetectoReal - AI Image Authenticity Detection</p>
-    <p style="font-size: 0.875rem; color: #a0aec0;">Built with Streamlit and PyTorch | Advanced ML Technology</p>
-</div>
+    <style>
+    .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 15px 0;
+        text-align: center;
+        background: linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.95) 100%);
+        backdrop-filter: blur(12px);
+        color: #f8fafc;
+        font-size: 14px;
+        font-weight: 500;
+        border-top: 1px solid rgba(74, 85, 104, 0.2);
+        z-index: 999;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    .footer strong {
+        color: #4a90e2;
+        font-weight: 600;
+    }
+    
+    .footer:hover {
+        background: linear-gradient(135deg, rgba(31, 41, 55, 0.98) 0%, rgba(17, 24, 39, 0.98) 100%);
+    }
+    
+    @media (max-width: 768px) {
+        .footer {
+            padding: 12px 0;
+            font-size: 13px;
+        }
+    }
+    </style>
+
+    <div class="footer">
+        Built with ❤️ using <strong>Streamlit</strong> and <strong>PyTorch</strong>
+    </div>
 """, unsafe_allow_html=True)
