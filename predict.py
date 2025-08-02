@@ -6,8 +6,7 @@ from PIL import Image # type: ignore
 import os
 import numpy as np
 import random
-from model import SimpleCNN 
-from model_path_fix import ModelPathManager
+from model import SimpleCNN
 
 # === DETERMINISTIC SETTINGS ===
 def set_deterministic():
@@ -38,7 +37,6 @@ device = torch.device("cpu")
 
 # === LOAD MODEL ONCE ===
 model = None
-model_path_manager = ModelPathManager()
 
 def load_model(model_path=None):
     """Load the model with proper error handling for Streamlit Cloud"""
@@ -48,9 +46,24 @@ def load_model(model_path=None):
         return model
     
     try:
-        # Use the model path manager for robust loading
-        model, status = model_path_manager.load_model(device)
-        print(f"📊 Model loading status: {status}")
+        # Try to load learned model first, then fallback to original model
+        model_paths = ['learned_model.pth', 'model.pth']
+        
+        for path in model_paths:
+            if os.path.exists(path):
+                print(f"📊 Loading model from: {path}")
+                model = SimpleCNN(num_classes=2)
+                model.to(device)
+                state_dict = torch.load(path, map_location=device)
+                model.load_state_dict(state_dict)
+                model.eval()
+                return model
+        
+        # If no model files found, create a fresh model
+        print("🔄 Creating fresh model (no files found)")
+        model = SimpleCNN(num_classes=2)
+        model.to(device)
+        model.eval()
         return model
         
     except Exception as e:

@@ -13,8 +13,6 @@ from io import BytesIO
 import datetime
 import time
 from enhanced_feedback import EnhancedFeedbackCollector, FeedbackAnalyzer
-from retrain_model import retrain_model_with_feedback
-from predict import load_prediction_model, predict_image_from_pil, get_detailed_analysis
 from real_time_learning_enhanced_simple import RLHFImageClassifier
 
 # Initialize RLHF image classifier
@@ -631,27 +629,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(56, 178, 172, 0.1)); 
-                border: 1px solid rgba(74, 144, 226, 0.3); 
-                border-radius: 12px; 
-                padding: 1.5rem; 
-                margin: 2rem 0;">
-        <h4 style="color: #4a90e2; margin-bottom: 1rem;">💡 Learning Persistence</h4>
-        <p style="color: #e2e8f0; margin-bottom: 0.5rem;">
-            <strong>Your learning is automatically saved!</strong> When you provide feedback and correct the model, 
-            it learns and remembers this information. The learning persists across:
-        </p>
-        <ul style="color: #e2e8f0; margin: 0; padding-left: 1.5rem;">
-            <li><strong>Page refreshes</strong> - Your learning won't be lost when you refresh the page</li>
-            <li><strong>Browser sessions</strong> - Learning is saved to files for long-term persistence</li>
-            <li><strong>Multiple uploads</strong> - The model remembers previous corrections</li>
-        </ul>
-        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 1rem; margin-bottom: 0;">
-            💾 Learning data is stored locally and in session state for maximum reliability.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+
 
 # Footer
 st.markdown("""

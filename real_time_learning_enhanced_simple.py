@@ -24,7 +24,6 @@ import streamlit as st
 # from sklearn.metrics.pairwise import cosine_similarity  # Optional import
 from model import SimpleCNN
 from predict import load_prediction_model
-from model_path_fix import ModelPathManager
 
 # === DETERMINISTIC SETTINGS ===
 def set_deterministic():
@@ -67,9 +66,6 @@ class RLHFImageClassifier:
         self.vector_db_path = 'vector_db.pkl'
         self.feedback_dataset_path = 'feedback_dataset.pkl'
         
-        # Initialize model path manager
-        self.model_path_manager = ModelPathManager()
-        
         # Load or initialize model
         self.model = self._load_model(model_path)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=1e-4)
@@ -91,9 +87,22 @@ class RLHFImageClassifier:
     def _load_model(self, model_path):
         """Load the CNN model with robust error handling and learned state"""
         try:
-            # Use the model path manager for robust loading
-            model, status = self.model_path_manager.load_model(self.device)
-            print(f"📊 RLHF model loading status: {status}")
+            # Try to load learned model first, then fallback to original model
+            model_paths = ['learned_model.pth', 'model.pth']
+            
+            for path in model_paths:
+                if os.path.exists(path):
+                    print(f"📊 RLHF loading model from: {path}")
+                    model = SimpleCNN(num_classes=2).to(self.device)
+                    state_dict = torch.load(path, map_location=self.device)
+                    model.load_state_dict(state_dict)
+                    model.eval()
+                    return model
+            
+            # If no model files found, create a fresh model
+            print("🔄 Creating fresh RLHF model (no files found)")
+            model = SimpleCNN(num_classes=2).to(self.device)
+            model.eval()
             return model
                 
         except Exception as e:
