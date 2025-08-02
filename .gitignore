@@ -252,7 +252,7 @@ check_deployment.py
 FEEDBACK_GUIDE.md
 DEPLOYMENT_GUIDE.md
 
-# Model files
+# Model files (can be large and regenerated)
 model_backup.pth
 model_retrained.pth
 real_vs_fake.keras
@@ -268,6 +268,10 @@ model_backup_20250731_140900.pth
 *.onnx
 *.tflite
 *.pb
+
+# Large dataset files (exceed GitHub's 100MB limit)
+feedback_dataset.pkl
+vector_db.pkl
 
 feedback_data/set.pkl
 
