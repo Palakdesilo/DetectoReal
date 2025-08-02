@@ -49,25 +49,48 @@ class RLHFImageClassifier:
         # Feedback dataset for fine-tuning
         self.feedback_dataset = FeedbackDataset()
         
+        # Load persistent data
+        self._load_persistent_data()
+        
         # No statistics tracking
         
         print(f"🚀 RLHF Image Classifier initialized on {self.device}")
     
     def _load_model(self, model_path):
-        """Load the CNN model"""
+        """Load the CNN model with robust error handling"""
         try:
             if os.path.exists(model_path):
+                print(f"Loading model from: {model_path}")
                 model = SimpleCNN(num_classes=2).to(self.device)
-                model.load_state_dict(torch.load(model_path, map_location=self.device))
-                print(f"✅ Model loaded from {model_path}")
+                
+                # Try loading with different approaches
+                try:
+                    state_dict = torch.load(model_path, map_location=self.device)
+                    model.load_state_dict(state_dict)
+                    print(f"✅ Model loaded from {model_path}")
+                except Exception as load_error:
+                    print(f"⚠️ Error loading state dict: {load_error}")
+                    print("Trying to load as full model...")
+                    try:
+                        model = torch.load(model_path, map_location=self.device)
+                        print(f"✅ Full model loaded from {model_path}")
+                    except Exception as full_load_error:
+                        print(f"❌ Error loading full model: {full_load_error}")
+                        print("Initializing new model...")
+                        model = SimpleCNN(num_classes=2).to(self.device)
             else:
+                print(f"Model file not found: {model_path}")
+                print("Initializing new model...")
                 model = SimpleCNN(num_classes=2).to(self.device)
-                print("🆕 New model initialized")
+            
             model.eval()
             return model
         except Exception as e:
             print(f"❌ Error loading model: {e}")
-            return SimpleCNN(num_classes=2).to(self.device)
+            print("Initializing new model...")
+            model = SimpleCNN(num_classes=2).to(self.device)
+            model.eval()
+            return model
     
     def _create_feature_extractor(self):
         """Create feature extractor for intermediate CNN features"""
@@ -230,6 +253,16 @@ class RLHFImageClassifier:
             
             # Reset learning rate
             self.optimizer.param_groups[0]['lr'] = original_lr
+            
+            # Save the improved model after strong learning
+            try:
+                torch.save(self.model.state_dict(), 'model.pth')
+                print("💾 Strong learning model saved")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not save model: {e}")
+            
+            # Save persistent data
+            self._save_persistent_data()
             
             # Final test
             test_result = self._test_immediate_improvement(image, user_correction)
@@ -464,6 +497,16 @@ class RLHFImageClassifier:
                 accuracy = correct_predictions / len(labels[:len(processed_images)])
                 print(f"📊 Learning verification: {correct_predictions}/{len(labels[:len(processed_images)])} correct ({accuracy:.2%})")
             
+            # Save the improved model immediately after learning
+            try:
+                torch.save(self.model.state_dict(), 'model.pth')
+                print("💾 Improved model saved")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not save model: {e}")
+            
+            # Save persistent data
+            self._save_persistent_data()
+            
         except Exception as e:
             print(f"❌ Error in fine-tuning: {e}")
             import traceback
@@ -494,6 +537,16 @@ class RLHFImageClassifier:
             # Clear feedback dataset to start fresh
             self.feedback_dataset.clear()
             
+            # Save the reset model
+            try:
+                torch.save(self.model.state_dict(), 'model.pth')
+                print("💾 Reset model saved")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not save reset model: {e}")
+            
+            # Save persistent data
+            self._save_persistent_data()
+            
             print("✅ Model reset complete - ready for fresh learning")
             
         except Exception as e:
@@ -504,6 +557,38 @@ class RLHFImageClassifier:
         self.images.clear()
         self.labels.clear()
         self.features.clear()
+    
+    def _save_persistent_data(self):
+        """Save vector database and feedback dataset"""
+        try:
+            # Save vector database
+            with open('vector_db.pkl', 'wb') as f:
+                pickle.dump(self.vector_db, f)
+            
+            # Save feedback dataset
+            with open('feedback_dataset.pkl', 'wb') as f:
+                pickle.dump(self.feedback_dataset, f)
+            
+            print("💾 Persistent data saved")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not save persistent data: {e}")
+    
+    def _load_persistent_data(self):
+        """Load vector database and feedback dataset"""
+        try:
+            # Load vector database
+            if os.path.exists('vector_db.pkl'):
+                with open('vector_db.pkl', 'rb') as f:
+                    self.vector_db = pickle.load(f)
+                print("📂 Vector database loaded")
+            
+            # Load feedback dataset
+            if os.path.exists('feedback_dataset.pkl'):
+                with open('feedback_dataset.pkl', 'rb') as f:
+                    self.feedback_dataset = pickle.load(f)
+                print("📂 Feedback dataset loaded")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not load persistent data: {e}")
     
     def _preprocess_image(self, image):
         """Preprocess image for model input"""
