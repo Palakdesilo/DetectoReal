@@ -17,6 +17,9 @@ plotly>=5.15.0
 numpy>=1.21.0
 pandas>=1.3.0
 
+# RLHF and ML Dependencies (optional - system works without sklearn)
+# scikit-learn>=1.0.0  # Uncomment if you want sklearn for cosine similarity
+
 # Enhanced UI Components
 streamlit-option-menu>=0.3.0
 streamlit-aggrid>=0.3.0

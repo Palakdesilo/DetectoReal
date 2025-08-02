@@ -15,14 +15,13 @@ import time
 from enhanced_feedback import EnhancedFeedbackCollector, FeedbackAnalyzer
 from retrain_model import retrain_model_with_feedback
 from predict import load_prediction_model, predict_image_from_pil, get_detailed_analysis
-from automatic_learning_system import AutomaticLearningSystem
+from real_time_learning_enhanced_simple import RLHFImageClassifier
 
-# Initialize automatic learning system (hidden from UI)
-if 'automatic_learning_system' not in st.session_state:
-    st.session_state.automatic_learning_system = AutomaticLearningSystem(
-        feedback_threshold=5,  # Retrain after 5 feedback items
-        auto_retrain=True,
-        retrain_interval_hours=1  # Allow retraining every hour
+# Initialize RLHF image classifier
+if 'real_time_learning_system' not in st.session_state:
+    st.session_state.real_time_learning_system = RLHFImageClassifier(
+        learning_rate=1e-4,
+        memory_size=1000
     )
 
 # Page configuration
@@ -37,7 +36,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* Override Streamlit's theme detection */
-    [data-testid="stAppViewContainer"] {
+    .stApp {
         background: var(--bg-gradient-primary) !important;
     }
     
@@ -57,8 +56,19 @@ st.markdown("""
         color: var(--text-primary) !important;
     }
     
+    /* Override Streamlit-generated element container classes */
+    .stElementContainer,
+    .element-container,
+    .st-emotion-cache-v3w3zg,
+    .eertqu00 {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
          /* Header styling - topmost layer with maximum specificity */
-     div[data-testid="stMarkdown"] h1,
      .stMarkdown h1,
      h1 {
          color: #ffffff !important;
@@ -75,7 +85,6 @@ st.markdown("""
      }
     
          /* Header paragraph styling - topmost layer */
-     div[data-testid="stMarkdown"] p,
      .stMarkdown p,
      p {
          color: #ffffff !important;
@@ -299,7 +308,7 @@ st.markdown("""
     }
 
     /* Override Streamlit's default light theme */
-    [data-testid="stAppViewContainer"] {
+    .stApp {
         background: var(--bg-gradient-primary) !important;
     }
 
@@ -429,26 +438,54 @@ st.markdown("""
 
     /* Messages */
     .message {
-        padding: 1rem;
-        border-radius: 8px;
+        padding: 1.25rem;
+        border-radius: 12px;
         margin: 1rem 0;
         font-weight: 500;
-        animation: slideIn 0.3s ease;
+        animation: slideIn 0.4s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+        border-left: 4px solid;
+    }
+    
+    .message::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transform: translateX(-100%);
+        animation: shimmer 2s infinite;
     }
 
     .message-success {
-        background: var(--success);
-        color: var(--off-white);
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+        border-color: #22c55e;
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.2);
     }
 
     .message-error {
-        background: var(--error);
-        color: var(--off-white);
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+        border-color: #ef4444;
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.2);
     }
 
     .message-warning {
-        background: var(--warning);
-        color: var(--off-white);
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+        border-color: #f59e0b;
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
     }
 
     @keyframes slideIn {
@@ -480,26 +517,7 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Confidence meter */
-    .confidence-meter {
-        padding: 1.5rem;
-        margin: 1rem 0;
-    }
 
-    .confidence-bar {
-        height: 12px;
-        background: var(--gray-300);
-        border-radius: 6px;
-        overflow: hidden;
-        margin: 0.5rem 0;
-    }
-
-    .confidence-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--error), var(--warning), var(--success));
-        border-radius: 6px;
-        transition: width 1s ease;
-    }
 
     /* File info */
     .file-info {
@@ -603,29 +621,29 @@ if uploaded_file is not None:
         resized_image = image.resize((150, 150))
         st.image(resized_image, caption="Uploaded Image")
         
-        # Get prediction
-        als = st.session_state.automatic_learning_system
-        result = als.predict_and_collect_feedback(image)
+        # Get prediction with real-time learning
+        rtl = st.session_state.real_time_learning_system
+        result = rtl.predict_with_learning(image)
         
         prediction = result["prediction"]
-        confidence = result["confidence"]
         
-        # Prediction result and confidence on same row
-        confidence_percentage = confidence * 100
+        # Prediction result
         prediction_text = "🔴 FAKE DETECTED" if prediction == "fake" else "🟢 REAL DETECTED"
         prediction_class = "prediction-fake" if prediction == "fake" else "prediction-real"
         
         st.markdown(f"""
-        <div class="prediction-result {prediction_class}" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem;">
-            <div style="font-size: 1.25rem; font-weight: 700;">
+        <div class="prediction-result {prediction_class}" style="padding: 2rem; text-align: center; margin: 2rem 0;">
+            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
                 {prediction_text}
             </div>
-            <div style="text-align: right;">
-                <div style="font-size: 0.875rem; margin-bottom: 0.25rem; opacity: 0.8;">Confidence</div>
-                <div style="font-size: 1.5rem; font-weight: 700;">{confidence_percentage:.1f}%</div>
+            <div style="font-size: 1rem; opacity: 0.8; margin-top: 0.5rem;">
+                AI-powered detection result
             </div>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Show prediction source and match type
+
     
     with col2:
         st.markdown("### 🤔 Was this prediction correct?")
@@ -634,68 +652,116 @@ if uploaded_file is not None:
         
         with col_a:
             if st.button("✅ Correct", key="correct_btn", use_container_width=True):
-                als = st.session_state.automatic_learning_system
-                feedback_result = als.predict_and_collect_feedback(
+                rtl = st.session_state.real_time_learning_system
+                feedback_result = rtl.predict_with_learning(
                     image=image,
                     user_feedback="Correct prediction",
                     user_correction=prediction
                 )
                 
-                if feedback_result['feedback_saved']:
-                    st.markdown("""
-                    <div class="message message-success">
-                        ✅ Thank you for the confirmation! Feedback saved successfully.
+                # Show success message for correct feedback
+                st.markdown("""
+                <div class="message message-success">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.5rem;">✅</span>
+                        <div>
+                            <div style="font-weight: 700; margin-bottom: 0.25rem;">Feedback Received!</div>
+                            <div style="font-size: 0.9rem; opacity: 0.9;">Thank you for the confirmation</div>
+                        </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                </div>
+                """, unsafe_allow_html=True)
         
         with col_b:
+            # Use session state to track if user clicked incorrect
+            if 'show_improve_section' not in st.session_state:
+                st.session_state.show_improve_section = False
+            
             if st.button("❌ Incorrect", key="incorrect_btn", use_container_width=True):
+                st.session_state.show_improve_section = True
+            
+            # Show improve model section if user clicked incorrect
+            if st.session_state.show_improve_section:
+                st.markdown("### 🚀 Improve Model")
+                st.markdown("Select the correct classification and click Improve Model:")
+                
                 correction_type = st.selectbox(
                     "What is the correct classification?",
                     ["Select...", "It's actually AI-Generated", "It's actually Real"],
-                    key="correction_select"
+                    key="unified_correction_select"
                 )
                 
                 if correction_type != "Select...":
                     user_correction = "fake" if "AI-Generated" in correction_type else "real"
-                    als = st.session_state.automatic_learning_system
-                    feedback_result = als.predict_and_collect_feedback(
-                        image=image,
-                        user_feedback=f"Correction: {correction_type}",
-                        user_correction=user_correction
-                    )
                     
-                    if feedback_result['feedback_saved']:
-                        st.markdown("""
-                        <div class="message message-success">
-                            ✅ Thank you for the correction! Feedback saved successfully.
-                        </div>
-                        """, unsafe_allow_html=True)
+                    if st.button("🔧 Improve Model", key="improve_model_btn", use_container_width=True, type="primary"):
+                        rtl = st.session_state.real_time_learning_system
                         
-                        if feedback_result['should_retrain']:
-                            st.markdown("""
-                            <div class="message message-warning">
-                                🔄 Ready for continuous model improvement!
-                            </div>
-                            """, unsafe_allow_html=True)
+                        with st.spinner("🧠 Teaching the model..."):
+                            # Use the enhanced improve_model_with_feedback method
+                            improvement_result = rtl.improve_model_with_feedback(image, user_correction)
+                            
+                            if improvement_result['success']:
+                                st.markdown("""
+                                <div class="message message-success">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span style="font-size: 1.5rem;">✅</span>
+                                        <div>
+                                            <div style="font-weight: 700; margin-bottom: 0.25rem;">Model Improved Successfully!</div>
+                                            <div style="font-size: 0.9rem; opacity: 0.9;">Learned everything about this image and similar images</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Show learning verification
+                                if improvement_result.get('learning_verified', False):
+                                    st.markdown("""
+                                    <div class="message message-success">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="font-size: 1.5rem;">🎉</span>
+                                            <div>
+                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Perfect Learning!</div>
+                                                <div style="font-size: 0.9rem; opacity: 0.9;">Model now correctly predicts this image</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    st.markdown("""
+                                    <div class="message message-warning">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="font-size: 1.5rem;">🔄</span>
+                                            <div>
+                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning in Progress</div>
+                                                <div style="font-size: 0.9rem; opacity: 0.9;">Model is improving with each feedback</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                
+                                # Reset the section
+                                st.session_state.show_improve_section = False
+                                st.rerun()
+                            else:
+                                st.markdown(f"""
+                                <div class="message message-error">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span style="font-size: 1.5rem;">❌</span>
+                                        <div>
+                                            <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning Error</div>
+                                            <div style="font-size: 0.9rem; opacity: 0.9;">{improvement_result.get('error', 'Unknown error')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                
+                # Add a reset button
+                if st.button("🔄 Reset", key="reset_btn", use_container_width=True):
+                    st.session_state.show_improve_section = False
+                    st.rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Improve Model", key="retrain_btn", use_container_width=True):
-            with st.spinner("🔄 Continuously improving model..."):
-                als = st.session_state.automatic_learning_system
-                success = als.trigger_retraining(method="rlhf")
-                if success:
-                    st.markdown("""
-                    <div class="message message-success">
-                        🎉 Model continuously improved! The existing model has been enhanced based on your feedback.
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown("""
-                    <div class="message message-error">
-                        ❌ Continuous improvement failed. Please try again or check system status.
-                    </div>
-                    """, unsafe_allow_html=True)
 
 else:
     # Landing page
@@ -719,13 +785,13 @@ else:
         </div>
         <div class="feature-item">
             <div class="feature-icon">🤖</div>
-            <h4>Continuous Learning</h4>
-            <p>Existing model continuously improves from user feedback with RLHF technology.</p>
+            <h4>Real-Time Learning</h4>
+            <p>Model learns immediately from your feedback with instant improvement and memory.</p>
         </div>
         <div class="feature-item">
             <div class="feature-icon">⚡</div>
             <h4>Real-time Processing</h4>
-            <p>Instant predictions with confidence scores in seconds.</p>
+            <p>Instant predictions in seconds.</p>
         </div>
         <div class="feature-item">
             <div class="feature-icon">🛡️</div>

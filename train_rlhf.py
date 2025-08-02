@@ -249,12 +249,24 @@ class RLHFTrainer:
     
     def get_training_summary(self):
         """Get summary of training history"""
+        reward_epochs = [h for h in self.training_history if h['type'] == 'reward']
+        policy_epochs = [h for h in self.training_history if h['type'] == 'policy']
+        
+        final_reward_loss = None
+        final_policy_loss = None
+        
+        if len(reward_epochs) >= 1:
+            final_reward_loss = reward_epochs[-1].get('reward_loss')
+        
+        if len(policy_epochs) >= 1:
+            final_policy_loss = policy_epochs[-1].get('policy_loss')
+        
         return {
             'total_epochs': len(self.training_history),
-            'reward_epochs': len([h for h in self.training_history if h['type'] == 'reward']),
-            'policy_epochs': len([h for h in self.training_history if h['type'] == 'policy']),
-            'final_reward_loss': self.training_history[-2]['reward_loss'] if len(self.training_history) >= 2 else None,
-            'final_policy_loss': self.training_history[-1]['policy_loss'] if self.training_history else None
+            'reward_epochs': len(reward_epochs),
+            'policy_epochs': len(policy_epochs),
+            'final_reward_loss': final_reward_loss,
+            'final_policy_loss': final_policy_loss
         }
 
 class PolicyModel(nn.Module):
@@ -397,8 +409,10 @@ def main():
         summary = trainer.get_training_summary()
         print(f"\n📈 Continuous Improvement Summary:")
         print(f"Total epochs: {summary['total_epochs']}")
-        print(f"Final reward loss: {summary['final_reward_loss']:.4f}")
-        print(f"Final policy loss: {summary['final_policy_loss']:.4f}")
+        if summary['final_reward_loss'] is not None:
+            print(f"Final reward loss: {summary['final_reward_loss']:.4f}")
+        if summary['final_policy_loss'] is not None:
+            print(f"Final policy loss: {summary['final_policy_loss']:.4f}")
         
         print("✅ Model continuously improved with user feedback")
         

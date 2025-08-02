@@ -220,6 +220,21 @@ class AutomaticLearningSystem:
             else:
                 print(f"❌ {method_name} failed")
                 
+        except KeyError as e:
+            print(f"❌ Error during continuous improvement: Missing key '{e}' in training data")
+            print("🔄 Trying standard retraining method instead...")
+            try:
+                from retrain_model import retrain_model_with_feedback
+                success = retrain_model_with_feedback()
+                if success:
+                    print("✅ Standard retraining completed successfully")
+                    self.last_retrain_time = datetime.now()
+                    self.feedback_count = 0
+                    self.model = load_prediction_model()
+                else:
+                    print("❌ Standard retraining also failed")
+            except Exception as fallback_error:
+                print(f"❌ Fallback retraining also failed: {fallback_error}")
         except Exception as e:
             print(f"❌ Error during continuous improvement: {e}")
     
