@@ -17,12 +17,35 @@ import time
 import threading
 from PIL import Image
 import os
+import random
 from collections import defaultdict
 import pickle
 import streamlit as st
 # from sklearn.metrics.pairwise import cosine_similarity  # Optional import
 from model import SimpleCNN
 from predict import load_prediction_model
+from model_path_fix import ModelPathManager
+
+# === DETERMINISTIC SETTINGS ===
+def set_deterministic():
+    """Set deterministic settings for reproducible results"""
+    # Set random seeds
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
+    torch.cuda.manual_seed_all(42)
+    
+    # Set deterministic algorithms
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
+    # Set environment variables for deterministic behavior
+    os.environ['PYTHONHASHSEED'] = '42'
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+
+# Apply deterministic settings
+set_deterministic()
 
 class RLHFImageClassifier:
     """
@@ -32,7 +55,8 @@ class RLHFImageClassifier:
     """
     
     def __init__(self, model_path='model.pth', learning_rate=1e-3, memory_size=1000):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # Force CPU usage for consistent results between local and cloud
+        self.device = torch.device('cpu')
         self.learning_rate = learning_rate
         self.memory_size = memory_size
         self.learning_lock = threading.Lock()
@@ -42,6 +66,9 @@ class RLHFImageClassifier:
         self.learned_model_path = 'learned_model.pth'
         self.vector_db_path = 'vector_db.pkl'
         self.feedback_dataset_path = 'feedback_dataset.pkl'
+        
+        # Initialize model path manager
+        self.model_path_manager = ModelPathManager()
         
         # Load or initialize model
         self.model = self._load_model(model_path)
@@ -64,54 +91,14 @@ class RLHFImageClassifier:
     def _load_model(self, model_path):
         """Load the CNN model with robust error handling and learned state"""
         try:
-            # Create a single model instance
-            model = SimpleCNN(num_classes=2).to(self.device)
-            
-            # First try to load the learned model if it exists
-            if os.path.exists(self.learned_model_path):
-                print(f"Loading learned model from: {self.learned_model_path}")
-                try:
-                    state_dict = torch.load(self.learned_model_path, map_location=self.device)
-                    model.load_state_dict(state_dict)
-                    print(f"✅ Learned model loaded from {self.learned_model_path}")
-                    model.eval()
-                    return model
-                except Exception as learned_error:
-                    print(f"⚠️ Error loading learned model: {learned_error}")
-                    print("Falling back to original model...")
-            
-            # Load original model
-            if os.path.exists(model_path):
-                print(f"Loading original model from: {model_path}")
-                
-                # Try loading with different approaches
-                try:
-                    state_dict = torch.load(model_path, map_location=self.device)
-                    model.load_state_dict(state_dict)
-                    print(f"✅ Original model loaded from {model_path}")
-                except Exception as load_error:
-                    print(f"⚠️ Error loading state dict: {load_error}")
-                    print("Trying to load as full model...")
-                    try:
-                        # Load full model and extract state dict
-                        full_model = torch.load(model_path, map_location=self.device)
-                        if hasattr(full_model, 'state_dict'):
-                            model.load_state_dict(full_model.state_dict())
-                        else:
-                            model.load_state_dict(full_model)
-                        print(f"✅ Full model loaded from {model_path}")
-                    except Exception as full_load_error:
-                        print(f"❌ Error loading full model: {full_load_error}")
-                        print("Using initialized model...")
-            else:
-                print(f"Model file not found: {model_path}")
-                print("Using initialized model...")
-            
-            model.eval()
+            # Use the model path manager for robust loading
+            model, status = self.model_path_manager.load_model(self.device)
+            print(f"📊 RLHF model loading status: {status}")
             return model
+                
         except Exception as e:
             print(f"❌ Error loading model: {e}")
-            print("Using initialized model...")
+            print("🔄 Creating fresh model due to loading error")
             model = SimpleCNN(num_classes=2).to(self.device)
             model.eval()
             return model

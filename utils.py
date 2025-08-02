@@ -5,14 +5,36 @@ from torchvision import transforms # type: ignore
 from PIL import Image
 import os
 import numpy as np
+import random
+
+# === DETERMINISTIC SETTINGS ===
+def set_deterministic():
+    """Set deterministic settings for reproducible results"""
+    # Set random seeds
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
+    torch.cuda.manual_seed_all(42)
+    
+    # Set deterministic algorithms
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
+    # Set environment variables for deterministic behavior
+    os.environ['PYTHONHASHSEED'] = '42'
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+
+# Apply deterministic settings
+set_deterministic()
 
 # === IMAGE TRANSFORMS ===
 def get_transform(image_size=128):
-    """Get the standard transform for image preprocessing"""
+    """Get the standard transform for image preprocessing - standardized with predict.py"""
     return transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Normalize([0.5]*3, [0.5]*3)  # Match predict.py normalization
     ])
 
 # === DATA LOADING UTILITIES ===
@@ -39,9 +61,10 @@ def load_image_from_pil(pil_image):
 
 # === MODEL UTILITIES ===
 def load_model(model_path, device=None):
-    """Load a PyTorch model from file"""
+    """Load the model with proper error handling"""
     if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # Force CPU usage for consistent results between local and cloud
+        device = torch.device("cpu")
     
     try:
         from model import SimpleCNN

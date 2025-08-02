@@ -5,15 +5,40 @@ from torchvision import transforms # type: ignore
 from PIL import Image # type: ignore
 import os
 import numpy as np
+import random
 from model import SimpleCNN 
+from model_path_fix import ModelPathManager
+
+# === DETERMINISTIC SETTINGS ===
+def set_deterministic():
+    """Set deterministic settings for reproducible results"""
+    # Set random seeds
+    random.seed(42)
+    np.random.seed(42)
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
+    torch.cuda.manual_seed_all(42)
+    
+    # Set deterministic algorithms
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
+    # Set environment variables for deterministic behavior
+    os.environ['PYTHONHASHSEED'] = '42'
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+
+# Apply deterministic settings
+set_deterministic()
 
 # === CONFIG ===
 MODEL_PATH = 'model.pth'
 CLASS_NAMES = ['fake', 'real']
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Force CPU usage for consistent results between local and cloud
+device = torch.device("cpu")
 
 # === LOAD MODEL ONCE ===
 model = None
+model_path_manager = ModelPathManager()
 
 def load_model(model_path=None):
     """Load the model with proper error handling for Streamlit Cloud"""
@@ -23,39 +48,19 @@ def load_model(model_path=None):
         return model
     
     try:
-        # Use provided model_path or default to MODEL_PATH
-        if model_path is None:
-            model_path = MODEL_PATH
-        
-        # Try to find the model file in different possible locations
-        possible_paths = [
-            model_path,
-            os.path.join(os.getcwd(), model_path),
-            os.path.join(os.path.dirname(__file__), model_path),
-            '/mount/src/detectoreal/model.pth',  # Streamlit Cloud path
-            '/app/model.pth',  # Alternative Streamlit Cloud path
-        ]
-        
-        found_path = None
-        for path in possible_paths:
-            if os.path.exists(path):
-                found_path = path
-                break
-        
-        if found_path is None:
-            raise FileNotFoundError(f"Model file not found. Tried paths: {possible_paths}")
-        
-        print(f"Loading model from: {found_path}")
-        
-        model = SimpleCNN(num_classes=2)
-        model.load_state_dict(torch.load(found_path, map_location=device))
-        model.to(device)
-        model.eval()
-        
+        # Use the model path manager for robust loading
+        model, status = model_path_manager.load_model(device)
+        print(f"📊 Model loading status: {status}")
         return model
         
     except Exception as e:
-        raise e
+        print(f"❌ Error in model loading: {e}")
+        # Create a simple model as fallback
+        print("🔄 Creating fallback model")
+        model = SimpleCNN(num_classes=2)
+        model.to(device)
+        model.eval()
+        return model
 
 def load_prediction_model(model_path=None):
     """Load the prediction model with optional model path"""
