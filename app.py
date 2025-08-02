@@ -23,6 +23,9 @@ if 'real_time_learning_system' not in st.session_state:
         learning_rate=1e-4,
         memory_size=1000
     )
+    print(f"🚀 Initialized RLHF system with model ID: {id(st.session_state.real_time_learning_system.model)}")
+else:
+    print(f"📂 Using existing RLHF system with model ID: {id(st.session_state.real_time_learning_system.model)}")
 
 # Page configuration
 st.set_page_config(
@@ -623,6 +626,7 @@ if uploaded_file is not None:
         
         # Get prediction with real-time learning
         rtl = st.session_state.real_time_learning_system
+        print(f"🔍 Making prediction with model ID: {id(rtl.model)}")
         result = rtl.predict_with_learning(image)
         
         prediction = result["prediction"]
@@ -651,26 +655,27 @@ if uploaded_file is not None:
         col_a, col_b = st.columns(2)
         
         with col_a:
-            if st.button("✅ Correct", key="correct_btn", use_container_width=True):
-                rtl = st.session_state.real_time_learning_system
-                feedback_result = rtl.predict_with_learning(
-                    image=image,
-                    user_feedback="Correct prediction",
-                    user_correction=prediction
-                )
-                
-                # Show success message for correct feedback
-                st.markdown("""
-                <div class="message message-success">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.5rem;">✅</span>
-                        <div>
-                            <div style="font-weight: 700; margin-bottom: 0.25rem;">Feedback Received!</div>
-                            <div style="font-size: 0.9rem; opacity: 0.9;">Thank you for the confirmation</div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+             if st.button("✅ Correct", key="correct_btn", use_container_width=True):
+                 # Show success message immediately
+                 st.markdown("""
+                 <div class="message message-success">
+                     <div style="display: flex; align-items: center; gap: 0.5rem;">
+                         <span style="font-size: 1.5rem;">✅</span>
+                         <div>
+                             <div style="font-weight: 700; margin-bottom: 0.25rem;">Feedback Received!</div>
+                             <div style="font-size: 0.9rem; opacity: 0.9;">Thank you for the confirmation</div>
+                         </div>
+                     </div>
+                 </div>
+                 """, unsafe_allow_html=True)
+                 
+                 # Process feedback in background (non-blocking)
+                 rtl = st.session_state.real_time_learning_system
+                 feedback_result = rtl.predict_with_learning(
+                     image=image,
+                     user_feedback="Correct prediction",
+                     user_correction=prediction
+                 )
         
         with col_b:
             # Use session state to track if user clicked incorrect
@@ -696,6 +701,7 @@ if uploaded_file is not None:
                     
                     if st.button("🔧 Improve Model", key="improve_model_btn", use_container_width=True, type="primary"):
                         rtl = st.session_state.real_time_learning_system
+                        print(f"🧠 Improving model with ID: {id(rtl.model)}")
                         
                         with st.spinner("🧠 Teaching the model..."):
                             # Use the enhanced improve_model_with_feedback method
@@ -739,6 +745,50 @@ if uploaded_file is not None:
                                         </div>
                                     </div>
                                     """, unsafe_allow_html=True)
+                                
+                                # Test the same image to verify learning
+                                st.markdown("### 🧪 Learning Verification")
+                                st.markdown("Testing the same image to verify learning:")
+                                
+                                test_result = rtl.test_same_image_improvement(image, user_correction)
+                                
+                                if test_result['correct_prediction']:
+                                    st.markdown("""
+                                    <div class="message message-success">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="font-size: 1.5rem;">✅</span>
+                                            <div>
+                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning Verified!</div>
+                                                <div style="font-size: 0.9rem; opacity: 0.9;">Same image now predicts correctly: """ + test_result['prediction'] + """</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                else:
+                                    st.markdown("""
+                                    <div class="message message-warning">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="font-size: 1.5rem;">⚠️</span>
+                                            <div>
+                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning Needs More Work</div>
+                                                <div style="font-size: 0.9rem; opacity: 0.9;">Current prediction: """ + test_result['prediction'] + """ (Expected: """ + user_correction + """)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                
+                                # Show learning details
+                                st.markdown(f"""
+                                <div style="background: rgba(31, 41, 55, 0.8); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                                    <h4>📊 Learning Details</h4>
+                                    <ul style="margin: 0; padding-left: 1.5rem;">
+                                        <li><strong>Source:</strong> {test_result['source']}</li>
+                                        <li><strong>Match Type:</strong> {test_result['match_type']}</li>
+                                        <li><strong>Memory Used:</strong> {'Yes' if test_result['memory_used'] else 'No'}</li>
+                                        <li><strong>Augmentations Applied:</strong> {improvement_result.get('augmentations_applied', 0)}</li>
+                                    </ul>
+                                </div>
+                                """, unsafe_allow_html=True)
                                 
                                 # Reset the section
                                 st.session_state.show_improve_section = False
@@ -810,6 +860,29 @@ else:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Add learning persistence note
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(56, 178, 172, 0.1)); 
+                border: 1px solid rgba(74, 144, 226, 0.3); 
+                border-radius: 12px; 
+                padding: 1.5rem; 
+                margin: 2rem 0;">
+        <h4 style="color: #4a90e2; margin-bottom: 1rem;">💡 Learning Persistence</h4>
+        <p style="color: #e2e8f0; margin-bottom: 0.5rem;">
+            <strong>Your learning is automatically saved!</strong> When you provide feedback and correct the model, 
+            it learns and remembers this information. The learning persists across:
+        </p>
+        <ul style="color: #e2e8f0; margin: 0; padding-left: 1.5rem;">
+            <li><strong>Page refreshes</strong> - Your learning won't be lost when you refresh the page</li>
+            <li><strong>Browser sessions</strong> - Learning is saved to files for long-term persistence</li>
+            <li><strong>Multiple uploads</strong> - The model remembers previous corrections</li>
+        </ul>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 1rem; margin-bottom: 0;">
+            💾 Learning data is stored locally and in session state for maximum reliability.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 
@@ -854,3 +927,5 @@ st.markdown("""
         Built with ❤️ using <strong>Streamlit</strong> and <strong>PyTorch</strong>
     </div>
 """, unsafe_allow_html=True)
+
+
