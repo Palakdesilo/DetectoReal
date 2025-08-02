@@ -259,6 +259,15 @@ real_vs_fake.keras
 real_vs_fake.h5
 model_backup_20250731_140408.pth
 model_backup_20250731_140900.pth
+*.pth
+*.pt
+*.h5
+*.keras
+*.pkl
+*.joblib
+*.onnx
+*.tflite
+*.pb
 
 # Data and feedback files
 feedback_data/
@@ -280,4 +289,81 @@ myenv/
 .venv/ 
 
 
-retrain_model.py 
+retrain_model.py
+
+# Additional ML/AI specific files
+*.bin
+*.safetensors
+*.ckpt
+*.pkl
+*.pickle
+*.joblib
+*.npy
+*.npz
+
+# Large data files
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.parquet
+*.feather
+*.hdf5
+*.h5
+
+# API keys and secrets
+.env
+.env.local
+.env.production
+.env.development
+secrets.json
+config.json
+api_keys.txt
+
+# Backup files
+*.bak
+*.backup
+*_backup.*
+*_old.*
+
+# Temporary and cache files
+.cache/
+*.cache
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Streamlit specific
+.streamlit/
+
+# Model training artifacts
+checkpoints/
+runs/
+wandb/
+mlruns/
+tensorboard_logs/
+lightning_logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.flac 
