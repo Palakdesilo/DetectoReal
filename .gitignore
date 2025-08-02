@@ -269,6 +269,8 @@ model_backup_20250731_140900.pth
 *.tflite
 *.pb
 
+feedback_data/set.pkl
+
 # Data and feedback files
 feedback_data/
 real_vs_fake/

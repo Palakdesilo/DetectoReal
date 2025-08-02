@@ -23,9 +23,6 @@ if 'real_time_learning_system' not in st.session_state:
         learning_rate=1e-4,
         memory_size=1000
     )
-    print(f"🚀 Initialized RLHF system with model ID: {id(st.session_state.real_time_learning_system.model)}")
-else:
-    print(f"📂 Using existing RLHF system with model ID: {id(st.session_state.real_time_learning_system.model)}")
 
 # Page configuration
 st.set_page_config(
@@ -35,198 +32,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Force dark theme
-st.markdown("""
-<style>
-    /* Override Streamlit's theme detection */
-    .stApp {
-        background: var(--bg-gradient-primary) !important;
-    }
-    
-    /* Force dark theme on all Streamlit components */
-    .stApp {
-        background: var(--bg-gradient-primary) !important;
-    }
-    
-    /* Override any light theme elements */
-    .stMarkdown, .stText, .stButton, .stSelectbox, .stFileUploader, .stSpinner {
-        color: var(--text-primary) !important;
-        background: transparent !important;
-    }
-    
-    /* Ensure upload area uses our dark theme */
-    .stFileUploader > div {
-        color: var(--text-primary) !important;
-    }
-    
-    /* Override Streamlit-generated element container classes */
-    .stElementContainer,
-    .element-container,
-    .st-emotion-cache-v3w3zg,
-    .eertqu00 {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    
-         /* Header styling - topmost layer with maximum specificity */
-     .stMarkdown h1,
-     h1 {
-         color: #ffffff !important;
-         font-size: 2.5rem !important;
-         font-weight: 700 !important;
-         margin-bottom: 1rem !important;
-         text-align: center !important;
-         z-index: 9999 !important;
-         position: relative !important;
-         opacity: 1 !important;
-         -webkit-text-fill-color: #ffffff !important;
-         -webkit-text-stroke: 0 !important;
-         text-shadow: none !important;
-     }
-    
-         /* Header paragraph styling - topmost layer */
-     .stMarkdown p,
-     p {
-         color: #ffffff !important;
-         font-size: 1.125rem !important;
-         font-weight: 500 !important;
-         text-align: center !important;
-         z-index: 9999 !important;
-         position: relative !important;
-         opacity: 1 !important;
-         -webkit-text-fill-color: #ffffff !important;
-         -webkit-text-stroke: 0 !important;
-         text-shadow: none !important;
-     }
-    
-    /* Force header container to stay on top */
-    .stMarkdown > div:first-child {
-        z-index: 9999 !important;
-        position: relative !important;
-        background: transparent !important;
-    }
-    
-    /* Specific header classes with maximum specificity */
-    .header-container {
-        z-index: 9999 !important;
-        position: relative !important;
-        background: transparent !important;
-        opacity: 1 !important;
-    }
-    
-         .main-title {
-         color: #ffffff !important;
-         font-size: 2.5rem !important;
-         font-weight: 700 !important;
-         margin-bottom: 1rem !important;
-         text-align: center !important;
-         z-index: 9999 !important;
-         position: relative !important;
-         opacity: 1 !important;
-         -webkit-text-fill-color: #ffffff !important;
-         -webkit-text-stroke: 0 !important;
-         text-shadow: none !important;
-     }
-    
-    .main-description {
-        color: #f8fafc !important;
-        font-size: 1.125rem !important;
-        font-weight: 500 !important;
-        text-align: center !important;
-        z-index: 9999 !important;
-        position: relative !important;
-        opacity: 1 !important;
-    }
-    
-    /* Header banner styling */
-    .header-banner {
-        padding: 1.5rem 2rem 6rem 2rem; !important;
-        border-radius: 12px !important;
-        margin-bottom: 2rem !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 1rem !important;
-        z-index: 9999 !important;
-        position: relative !important;
-        opacity: 1 !important;
-    }
-    
-         .header-banner h1 {
-         color: #ffffff !important;
-         font-size: 2.5rem !important;
-         font-weight: 700 !important;
-         margin: 0 !important;
-         opacity: 1 !important;
-         -webkit-text-fill-color: #ffffff !important;
-         -webkit-text-stroke: 0 !important;
-     }
-    
-    /* Additional white text enforcement */
-    .header-banner h1,
-    .header-banner .main-title,
-    div[data-testid="stMarkdown"] .header-banner h1 {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }
-    
-         .header-banner span {
-         font-size: 2.5rem !important;
-         opacity: 1 !important;
-     }
-</style>
-""", unsafe_allow_html=True)
-
-# === CUSTOM CSS FOR FILE UPLOADER ===
-st.markdown("""
-<style>
-    .stFileUploader {
-        border: 2px dashed #667eea;
-        border-radius: 15px;
-        padding: 2rem;
-        text-align: center;
-        background: rgba(102, 126, 234, 0.05);
-        transition: all 0.3s ease;
-    }
-
-    .stFileUploader:hover {
-        border-color: #764ba2;
-        background: rgba(118, 75, 162, 0.05);
-        transform: translateY(-2px);
-    }
-
-    .upload-note {
-        color: #555;
-        font-size: 0.9rem;
-        text-align: center;
-        margin-top: 0.5rem;
-    }
-
-    .upload-title {
-        text-align: center;
-        color: #333;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-
-    /* Background color override for entire app */
-    .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        font-family: 'Inter', sans-serif;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 # Unified CSS with dark theme
 st.markdown("""
 <style>
     /* CSS Variables for Neutral Color Palette */
     :root {
-        /* Neutral Color Palette */
         --primary-blue: #4a90e2;
         --primary-teal: #38b2ac;
         --primary-purple: #805ad5;
@@ -280,26 +90,14 @@ st.markdown("""
 
     body {
         font-size: 16px;
-        --scrollbar-width: 10px;
         font-family: "Source Sans", sans-serif;
         font-weight: 400;
         line-height: 1.6;
-        text-size-adjust: 100%;
-        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        -webkit-font-smoothing: auto;
-        box-sizing: border-box;
-        scrollbar-width: thin;
-        scrollbar-color: transparent transparent;
-        transition: all 0.3s ease;
-        position: absolute;
         color: var(--text-primary) !important;
-        inset: 0px;
-        color-scheme: dark !important;
-        overflow: hidden;
         background: var(--bg-gradient-primary) !important;
     }
 
-    /* Force dark theme and override Streamlit defaults */
+    /* Force dark theme */
     .stApp {
         background: var(--bg-gradient-primary) !important;
         color: var(--text-primary) !important;
@@ -310,12 +108,6 @@ st.markdown("""
         color: var(--text-primary) !important;
     }
 
-    /* Override Streamlit's default light theme */
-    .stApp {
-        background: var(--bg-gradient-primary) !important;
-    }
-
-    /* Ensure all text uses our color scheme */
     .stMarkdown, .stText, .stButton, .stSelectbox, .stFileUploader {
         color: var(--text-primary) !important;
     }
@@ -520,8 +312,6 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
 
-
-
     /* File info */
     .file-info {
         background: rgba(45, 55, 72, 0.8);
@@ -585,7 +375,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # Header
 st.markdown("""
 <div style="
@@ -598,11 +387,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
-
 # Upload section
-
-
 uploaded_file = st.file_uploader(
     "Choose an image file (JPG, JPEG, PNG)",
     type=["jpg", "jpeg", "png"],
@@ -626,7 +411,6 @@ if uploaded_file is not None:
         
         # Get prediction with real-time learning
         rtl = st.session_state.real_time_learning_system
-        print(f"🔍 Making prediction with model ID: {id(rtl.model)}")
         result = rtl.predict_with_learning(image)
         
         prediction = result["prediction"]
@@ -645,9 +429,6 @@ if uploaded_file is not None:
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Show prediction source and match type
-
     
     with col2:
         st.markdown("### 🤔 Was this prediction correct?")
@@ -656,7 +437,6 @@ if uploaded_file is not None:
         
         with col_a:
              if st.button("✅ Correct", key="correct_btn", use_container_width=True):
-                 # Show success message immediately
                  st.markdown("""
                  <div class="message message-success">
                      <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -669,7 +449,6 @@ if uploaded_file is not None:
                  </div>
                  """, unsafe_allow_html=True)
                  
-                 # Process feedback in background (non-blocking)
                  rtl = st.session_state.real_time_learning_system
                  feedback_result = rtl.predict_with_learning(
                      image=image,
@@ -678,14 +457,12 @@ if uploaded_file is not None:
                  )
         
         with col_b:
-            # Use session state to track if user clicked incorrect
             if 'show_improve_section' not in st.session_state:
                 st.session_state.show_improve_section = False
             
             if st.button("❌ Incorrect", key="incorrect_btn", use_container_width=True):
                 st.session_state.show_improve_section = True
             
-            # Show improve model section if user clicked incorrect
             if st.session_state.show_improve_section:
                 st.markdown("### 🚀 Improve Model")
                 st.markdown("Select the correct classification and click Improve Model:")
@@ -701,10 +478,8 @@ if uploaded_file is not None:
                     
                     if st.button("🔧 Improve Model", key="improve_model_btn", use_container_width=True, type="primary"):
                         rtl = st.session_state.real_time_learning_system
-                        print(f"🧠 Improving model with ID: {id(rtl.model)}")
                         
                         with st.spinner("🧠 Teaching the model..."):
-                            # Use the enhanced improve_model_with_feedback method
                             improvement_result = rtl.improve_model_with_feedback(image, user_correction)
                             
                             if improvement_result['success']:
@@ -720,7 +495,6 @@ if uploaded_file is not None:
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Show learning verification
                                 if improvement_result.get('learning_verified', False):
                                     st.markdown("""
                                     <div class="message message-success">
@@ -746,7 +520,6 @@ if uploaded_file is not None:
                                     </div>
                                     """, unsafe_allow_html=True)
                                 
-                                # Test the same image to verify learning
                                 st.markdown("### 🧪 Learning Verification")
                                 st.markdown("Testing the same image to verify learning:")
                                 
@@ -777,7 +550,6 @@ if uploaded_file is not None:
                                     </div>
                                     """, unsafe_allow_html=True)
                                 
-                                # Show learning details
                                 st.markdown(f"""
                                 <div style="background: rgba(31, 41, 55, 0.8); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
                                     <h4>📊 Learning Details</h4>
@@ -790,7 +562,6 @@ if uploaded_file is not None:
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Reset the section
                                 st.session_state.show_improve_section = False
                                 st.rerun()
                             else:
@@ -806,7 +577,6 @@ if uploaded_file is not None:
                                 </div>
                                 """, unsafe_allow_html=True)
                 
-                # Add a reset button
                 if st.button("🔄 Reset", key="reset_btn", use_container_width=True):
                     st.session_state.show_improve_section = False
                     st.rerun()
@@ -861,7 +631,6 @@ else:
     </div>
     """, unsafe_allow_html=True)
     
-    # Add learning persistence note
     st.markdown("""
     <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(56, 178, 172, 0.1)); 
                 border: 1px solid rgba(74, 144, 226, 0.3); 
@@ -884,9 +653,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-
-
-# Footer with matching theme
+# Footer
 st.markdown("""
     <style>
     .footer {
