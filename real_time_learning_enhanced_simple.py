@@ -97,6 +97,13 @@ class RLHFImageClassifier:
                     state_dict = torch.load(path, map_location=self.device)
                     model.load_state_dict(state_dict)
                     model.eval()
+                    
+                    # Debug: Check if this is a learned model
+                    if path == 'learned_model.pth':
+                        print("✅ Loaded learned model - should have improved predictions")
+                    else:
+                        print("📋 Loaded original model")
+                    
                     return model
             
             # If no model files found, create a fresh model
@@ -768,6 +775,16 @@ class RLHFImageClassifier:
             # Load from files (for cross-session persistence)
             self._load_persistent_data_from_files()
             
+            # CRITICAL FIX: Ensure model state is synchronized with session state
+            # If we loaded a learned model from file but session state doesn't have it,
+            # save the current model state to session state
+            if 'model_state' not in st.session_state and os.path.exists(self.learned_model_path):
+                try:
+                    st.session_state.model_state = self.model.state_dict()
+                    print("🔄 Synchronized learned model state to session state")
+                except Exception as e:
+                    print(f"⚠️ Could not sync model state to session: {e}")
+            
         except Exception as e:
             print(f"⚠️ Warning: Could not load persistent data: {e}")
     
@@ -960,6 +977,71 @@ class RLHFImageClassifier:
             "learning_rate": self.learning_rate,
             "model_id": id(self.model)
         }
+    
+    def verify_model_loading(self):
+        """Verify that the model is properly loaded and debug model state"""
+        try:
+            print(f"🔍 Model verification:")
+            print(f"   - Model ID: {id(self.model)}")
+            print(f"   - Device: {self.device}")
+            print(f"   - Mode: {'eval' if self.model.training == False else 'train'}")
+            
+            # Check if learned model file exists
+            learned_exists = os.path.exists(self.learned_model_path)
+            original_exists = os.path.exists('model.pth')
+            
+            print(f"   - Learned model file exists: {learned_exists}")
+            print(f"   - Original model file exists: {original_exists}")
+            
+            # Check session state
+            session_has_model = 'model_state' in st.session_state
+            print(f"   - Session has model state: {session_has_model}")
+            
+            # Test a simple prediction to verify model works
+            test_image = Image.new('RGB', (128, 128), color='red')
+            test_prediction = self._model_predict(test_image)
+            print(f"   - Test prediction: {test_prediction}")
+            
+            return {
+                'model_id': id(self.model),
+                'learned_model_exists': learned_exists,
+                'original_model_exists': original_exists,
+                'session_has_model': session_has_model,
+                'test_prediction': test_prediction
+            }
+            
+        except Exception as e:
+            print(f"❌ Error in model verification: {e}")
+            return {'error': str(e)}
+    
+    def force_reload_learned_model(self):
+        """Force reload the learned model to ensure proper state"""
+        try:
+            print("🔄 Force reloading learned model...")
+            
+            # Check if learned model exists
+            if os.path.exists(self.learned_model_path):
+                print("📂 Loading learned model from file...")
+                state_dict = torch.load(self.learned_model_path, map_location=self.device)
+                self.model.load_state_dict(state_dict)
+                self.model.eval()
+                
+                # Update session state
+                st.session_state.model_state = self.model.state_dict()
+                print("✅ Learned model reloaded and synchronized with session state")
+                
+                # Verify the reload
+                verification = self.verify_model_loading()
+                print(f"🔍 Reload verification: {verification}")
+                
+                return True
+            else:
+                print("⚠️ No learned model file found")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error force reloading learned model: {e}")
+            return False
     
     def ensure_same_model_instance(self):
         """Ensure we're always using the same model instance"""

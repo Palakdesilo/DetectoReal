@@ -21,6 +21,21 @@ if 'real_time_learning_system' not in st.session_state:
         learning_rate=1e-4,
         memory_size=1000
     )
+    
+    # Verify model loading after initialization
+    rtl = st.session_state.real_time_learning_system
+    verification = rtl.verify_model_loading()
+    print(f"🔍 Initial model verification: {verification}")
+    
+    # CRITICAL FIX: Force reload learned model if session state was cleared
+    if verification.get('learned_model_exists', False) and not verification.get('session_has_model', False):
+        print("🔄 Session state cleared but learned model exists - force reloading...")
+        rtl.force_reload_learned_model()
+else:
+    # Verify model loading for existing instance
+    rtl = st.session_state.real_time_learning_system
+    verification = rtl.verify_model_loading()
+    print(f"🔍 Existing model verification: {verification}")
 
 # Page configuration
 st.set_page_config(
@@ -391,6 +406,11 @@ uploaded_file = st.file_uploader(
     type=["jpg", "jpeg", "png"],
     help="Upload any image to analyze if it's real or AI-generated"
 )
+
+# Background debugging (hidden from user interface)
+rtl = st.session_state.real_time_learning_system
+verification = rtl.verify_model_loading()
+print(f"🔍 Background model verification: {verification}")
 
 # Analysis section
 if uploaded_file is not None:
