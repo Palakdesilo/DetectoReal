@@ -24,6 +24,8 @@ import streamlit as st
 # from sklearn.metrics.pairwise import cosine_similarity  # Optional import
 from model import SimpleCNN
 from predict import load_prediction_model
+import warnings
+warnings.filterwarnings('ignore')
 
 # === DETERMINISTIC SETTINGS ===
 def set_deterministic():
@@ -60,6 +62,7 @@ class RLHFImageClassifier:
         self.memory_size = memory_size
         self.learning_lock = threading.Lock()
         self.is_learning = False
+        self.training_progress = {'epoch': 0, 'total_epochs': 0, 'loss': 0.0, 'status': 'idle'}
         
         # Define persistent storage paths
         self.learned_model_path = 'learned_model.pth'
@@ -77,7 +80,7 @@ class RLHFImageClassifier:
         self.vector_db = VectorDatabase(max_size=memory_size)
         
         # Feedback dataset for fine-tuning
-        self.feedback_dataset = FeedbackDataset()
+        self.feedback_dataset = FeedbackDataset(max_size=memory_size)
         
         # Load persistent data from both session state and files
         self._load_persistent_data()
@@ -189,9 +192,16 @@ class RLHFImageClassifier:
     
     def improve_model_with_feedback(self, image, user_correction):
         """
-        Improve model using RLHF with enhanced data augmentation and learning
+        Improve model using RLHF with background training and enhanced data augmentation
         """
         try:
+            # Check if already training
+            if self.is_learning:
+                return {
+                    'success': False,
+                    'error': 'Model is already being trained. Please wait for current training to complete.'
+                }
+            
             # Get current prediction
             current_prediction = self._model_predict(image)
             
@@ -208,8 +218,13 @@ class RLHFImageClassifier:
             for aug_image in augmented_images:
                 self.feedback_dataset.add_sample(aug_image, user_correction, features)
             
-            # Enhanced fine-tuning with multiple iterations
-            self._fine_tune_model()
+            # Start background training
+            training_thread = threading.Thread(
+                target=self._background_fine_tune_model,
+                args=(image, user_correction)
+            )
+            training_thread.daemon = True
+            training_thread.start()
             
             # Update vector database
             self.vector_db.add_sample(features, user_correction)
@@ -217,30 +232,14 @@ class RLHFImageClassifier:
             # Save to files for cross-session persistence
             self._save_persistent_data_to_files()
             
-            # Test improvement immediately
-            test_result = self._test_immediate_improvement(image, user_correction)
-            
-            print(f"✅ RLHF learning completed: {current_prediction} → {user_correction}")
+            print(f"✅ RLHF learning started: {current_prediction} → {user_correction}")
             print(f"📊 Augmentations applied: {len(augmented_images)}")
-            print(f"🎯 Learning verification: {test_result}")
-            
-            # If learning didn't work well, try stronger learning
-            if not test_result.get('correct', False):
-                print("⚠️ Learning may not be sufficient, trying stronger approach...")
-                self._force_stronger_learning(image, user_correction)
-                
-                # If still not learning, try model reset
-                final_test = self._test_immediate_improvement(image, user_correction)
-                if not final_test.get('correct', False):
-                    print("🚨 Learning completely failed, resetting model...")
-                    self._reset_model_for_learning()
-                    self._fine_tune_model()
             
             return {
                 'success': True,
                 'augmentations_applied': len(augmented_images),
-                'learning_verified': test_result.get('correct', False),
-                'similar_images_updated': 0
+                'training_started': True,
+                'message': 'Model training started in background'
             }
             
         except Exception as e:
@@ -251,6 +250,31 @@ class RLHFImageClassifier:
                 'success': False,
                 'error': str(e)
             }
+    
+    def _background_fine_tune_model(self, image, user_correction):
+        """Background thread method for fine-tuning the model"""
+        try:
+            self.is_learning = True
+            self.training_progress['status'] = 'training'
+            self.training_progress['total_epochs'] = 5
+            
+            print("🧠 Starting background model training...")
+            
+            # Fine-tune the model
+            self._fine_tune_model()
+            
+            # Save the improved model
+            self._save_improved_model()
+            
+            self.is_learning = False
+            self.training_progress['status'] = 'completed'
+            
+            print("✅ Background training completed successfully")
+            
+        except Exception as e:
+            print(f"❌ Error in background training: {e}")
+            self.is_learning = False
+            self.training_progress['status'] = 'error'
     
     def _force_stronger_learning(self, image, user_correction):
         """Force stronger learning for stubborn cases"""
@@ -521,7 +545,7 @@ class RLHFImageClassifier:
             return {"correct": False, "error": str(e)}
     
     def _fine_tune_model(self):
-        """Fine-tune model on feedback dataset with enhanced learning"""
+        """Fine-tune model on feedback dataset with enhanced learning and progress tracking"""
         if len(self.feedback_dataset) < 1:
             return
         
@@ -561,11 +585,22 @@ class RLHFImageClassifier:
             total_loss = 0
             total_iterations = 0
             
+            # Update progress tracking
+            self.training_progress = {
+                'epoch': 0, 
+                'total_epochs': num_epochs, 
+                'loss': 0.0, 
+                'status': 'training'
+            }
+            
             print(f"🎯 Starting fine-tuning for {num_epochs} epochs...")
             
             for epoch in range(num_epochs):
                 epoch_loss = 0
                 epoch_iterations = 0
+                
+                # Update progress
+                self.training_progress['epoch'] = epoch + 1
                 
                 # Forward pass
                 self.optimizer.zero_grad()
@@ -596,6 +631,9 @@ class RLHFImageClassifier:
                 total_loss += loss.item()
                 total_iterations += 1
                 
+                # Update progress loss
+                self.training_progress['loss'] = loss.item()
+                
                 # Print progress every epoch
                 print(f"🔄 Epoch {epoch + 1}/{num_epochs}, loss: {loss.item():.4f}")
             
@@ -616,19 +654,13 @@ class RLHFImageClassifier:
                 print(f"📊 Learning verification: {correct_predictions}/{len(labels[:len(processed_images)])} correct ({accuracy:.2%})")
             
             # Save the improved model to both session state and files
-            try:
-                st.session_state.model_state = self.model.state_dict()
-                print("💾 Improved model saved to session state")
-            except Exception as e:
-                print(f"⚠️ Warning: Could not save model to session: {e}")
-            
-            # Save to files for cross-session persistence
-            self._save_persistent_data_to_files()
+            self._save_improved_model()
             
         except Exception as e:
             print(f"❌ Error in fine-tuning: {e}")
             import traceback
             traceback.print_exc()
+            self.training_progress['status'] = 'error'
     
     def _focal_loss(self, probs, targets, alpha=1.0, gamma=2.0):
         """Focal loss for better learning of hard examples"""
@@ -883,17 +915,50 @@ class RLHFImageClassifier:
             return "error"
     
     def _save_improved_model(self):
-        """Save the improved model to both session state and files"""
+        """Save the improved model with robust error handling"""
         try:
-            # Save model state to session state
-            st.session_state.model_state = self.model.state_dict()
-            print("💾 Improved model saved to session state")
+            # Save to session state
+            try:
+                st.session_state.model_state = self.model.state_dict()
+                print("💾 Improved model saved to session state")
+            except Exception as e:
+                print(f"⚠️ Warning: Could not save model to session: {e}")
             
-            # Save to files for cross-session persistence
+            # Save to learned_model.pth file (CRITICAL for persistence)
+            try:
+                torch.save(self.model.state_dict(), self.learned_model_path)
+                print(f"💾 Improved model saved to {self.learned_model_path}")
+                
+                # Verify the save was successful
+                if os.path.exists(self.learned_model_path):
+                    file_size = os.path.getsize(self.learned_model_path)
+                    print(f"✅ Model save verified: {file_size:,} bytes")
+                else:
+                    print("❌ Model save failed - file not created")
+                    
+            except Exception as e:
+                print(f"❌ Error saving learned model: {e}")
+                # Try alternative save location
+                try:
+                    alt_path = f"backup_{self.learned_model_path}"
+                    torch.save(self.model.state_dict(), alt_path)
+                    print(f"💾 Learned model saved to backup: {alt_path}")
+                except Exception as backup_e:
+                    print(f"❌ Backup save also failed: {backup_e}")
+            
+            # Save persistent data to files
             self._save_persistent_data_to_files()
             
         except Exception as e:
-            print(f"❌ Error saving model: {e}")
+            print(f"❌ Error in _save_improved_model: {e}")
+    
+    def get_training_progress(self):
+        """Get current training progress for UI updates"""
+        return self.training_progress.copy()
+    
+    def is_training(self):
+        """Check if model is currently training"""
+        return self.is_learning
     
     def test_same_image_improvement(self, image, expected_prediction):
         """Test if the same image now predicts correctly after learning"""

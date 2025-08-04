@@ -37,6 +37,9 @@ else:
     verification = rtl.verify_model_loading()
     print(f"🔍 Existing model verification: {verification}")
 
+# Check if model has been improved (for internal use only)
+model_improved = os.path.exists('learned_model.pth')
+
 # Page configuration
 st.set_page_config(
     page_title="DetectoReal - AI Image Authenticity Detection",
@@ -44,6 +47,18 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# Hide the sidebar completely
+st.markdown("""
+<style>
+    [data-testid="collapsedControl"] {
+        display: none
+    }
+    section[data-testid="stSidebar"] {
+        display: none;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Unified CSS with dark theme
 st.markdown("""
@@ -414,6 +429,26 @@ print(f"🔍 Background model verification: {verification}")
 
 # Analysis section
 if uploaded_file is not None:
+    # Track current uploaded file to detect new uploads
+    current_file_key = f"{uploaded_file.name}_{uploaded_file.size}_{uploaded_file.type}"
+    
+    # Check if this is a new image upload
+    if 'last_uploaded_file' not in st.session_state:
+        st.session_state.last_uploaded_file = None
+    
+    if st.session_state.last_uploaded_file != current_file_key:
+        # New image uploaded - completely reset all previous processing state
+        st.session_state.show_improve_section = False
+        st.session_state.training_active = False
+        st.session_state.prediction_updated = False
+        st.session_state.updated_prediction = None
+        st.session_state.training_image = None
+        st.session_state.training_correction = None
+        st.session_state.last_uploaded_file = current_file_key
+        
+        # Force a clean state for new image processing
+        st.rerun()
+    
     with st.spinner("🔍 Analyzing image..."):
         time.sleep(0.5)
     
@@ -433,20 +468,44 @@ if uploaded_file is not None:
         
         prediction = result["prediction"]
         
-        # Prediction result
-        prediction_text = "🔴 FAKE DETECTED" if prediction == "fake" else "🟢 REAL DETECTED"
-        prediction_class = "prediction-fake" if prediction == "fake" else "prediction-real"
-        
-        st.markdown(f"""
-        <div class="prediction-result {prediction_class}" style="padding: 2rem; text-align: center; margin: 2rem 0;">
-            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
-                {prediction_text}
+        # Check if prediction was updated after training
+        if 'prediction_updated' in st.session_state and st.session_state.prediction_updated:
+            # Use the updated prediction from training
+            updated_prediction = st.session_state.updated_prediction
+            prediction_text = "🔴 FAKE DETECTED" if updated_prediction == "fake" else "🟢 REAL DETECTED"
+            prediction_class = "prediction-fake" if updated_prediction == "fake" else "prediction-real"
+            
+            st.markdown(f"""
+            <div class="prediction-result {prediction_class}" style="padding: 2rem; text-align: center; margin: 2rem 0; border: 3px solid {'#ef4444' if updated_prediction == 'fake' else '#10b981'}; border-radius: 12px; background: rgba(31, 41, 55, 0.95);">
+                <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+                    {prediction_text}
+                </div>
+                <div style="font-size: 1.2rem; opacity: 0.9; margin-top: 0.5rem;">
+                    ✅ Result Updated After Training
+                </div>
+                <div style="font-size: 1rem; opacity: 0.7; margin-top: 0.5rem;">
+                    Model learned from your feedback
+                </div>
             </div>
-            <div style="font-size: 1rem; opacity: 0.8; margin-top: 0.5rem;">
-                AI-powered detection result
+            """, unsafe_allow_html=True)
+            
+            # Reset the update flag
+            st.session_state.prediction_updated = False
+        else:
+            # Show original prediction
+            prediction_text = "🔴 FAKE DETECTED" if prediction == "fake" else "🟢 REAL DETECTED"
+            prediction_class = "prediction-fake" if prediction == "fake" else "prediction-real"
+            
+            st.markdown(f"""
+            <div class="prediction-result {prediction_class}" style="padding: 2rem; text-align: center; margin: 2rem 0;">
+                <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+                    {prediction_text}
+                </div>
+                <div style="font-size: 1rem; opacity: 0.8; margin-top: 0.5rem;">
+                    AI-powered detection result
+                </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("### 🤔 Was this prediction correct?")
@@ -497,109 +556,127 @@ if uploaded_file is not None:
                     if st.button("🔧 Improve Model", key="improve_model_btn", use_container_width=True, type="primary"):
                         rtl = st.session_state.real_time_learning_system
                         
-                        with st.spinner("🧠 Teaching the model..."):
-                            improvement_result = rtl.improve_model_with_feedback(image, user_correction)
-                            
-                            if improvement_result['success']:
-                                st.markdown("""
-                                <div class="message message-success">
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span style="font-size: 1.5rem;">✅</span>
-                                        <div>
-                                            <div style="font-weight: 700; margin-bottom: 0.25rem;">Model Improved Successfully!</div>
-                                            <div style="font-size: 0.9rem; opacity: 0.9;">Learned everything about this image and similar images</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                        # Check if already training
+                        if rtl.is_training():
+                            st.warning("🔄 Model is already being trained. Please wait for current training to complete.")
+                        else:
+                            with st.spinner("🧠 Starting model training..."):
+                                improvement_result = rtl.improve_model_with_feedback(image, user_correction)
                                 
-                                if improvement_result.get('learning_verified', False):
-                                    st.markdown("""
-                                    <div class="message message-success">
-                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="font-size: 1.5rem;">🎉</span>
-                                            <div>
-                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Perfect Learning!</div>
-                                                <div style="font-size: 0.9rem; opacity: 0.9;">Model now correctly predicts this image</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                else:
-                                    st.markdown("""
-                                    <div class="message message-warning">
-                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="font-size: 1.5rem;">🔄</span>
-                                            <div>
-                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning in Progress</div>
-                                                <div style="font-size: 0.9rem; opacity: 0.9;">Model is improving with each feedback</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                
-                                st.markdown("### 🧪 Learning Verification")
-                                st.markdown("Testing the same image to verify learning:")
-                                
-                                test_result = rtl.test_same_image_improvement(image, user_correction)
-                                
-                                if test_result['correct_prediction']:
+                                if improvement_result['success']:
+                                    # Store training state for monitoring
+                                    st.session_state.training_active = True
+                                    st.session_state.training_image = image
+                                    st.session_state.training_correction = user_correction
+                                    
                                     st.markdown("""
                                     <div class="message message-success">
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                             <span style="font-size: 1.5rem;">✅</span>
                                             <div>
-                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning Verified!</div>
-                                                <div style="font-size: 0.9rem; opacity: 0.9;">Same image now predicts correctly: """ + test_result['prediction'] + """</div>
+                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Model Training Started!</div>
+                                                <div style="font-size: 0.9rem; opacity: 0.9;">Training is happening in the background. You can continue using the app.</div>
                                             </div>
                                         </div>
                                     </div>
                                     """, unsafe_allow_html=True)
+                                    
+                                    st.rerun()
+
                                 else:
-                                    st.markdown("""
-                                    <div class="message message-warning">
-                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                            <span style="font-size: 1.5rem;">⚠️</span>
-                                            <div>
-                                                <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning Needs More Work</div>
-                                                <div style="font-size: 0.9rem; opacity: 0.9;">Current prediction: """ + test_result['prediction'] + """ (Expected: """ + user_correction + """)</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                
-                                st.markdown(f"""
-                                <div style="background: rgba(31, 41, 55, 0.8); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                                    <h4>📊 Learning Details</h4>
-                                    <ul style="margin: 0; padding-left: 1.5rem;">
-                                        <li><strong>Source:</strong> {test_result['source']}</li>
-                                        <li><strong>Match Type:</strong> {test_result['match_type']}</li>
-                                        <li><strong>Memory Used:</strong> {'Yes' if test_result['memory_used'] else 'No'}</li>
-                                        <li><strong>Augmentations Applied:</strong> {improvement_result.get('augmentations_applied', 0)}</li>
-                                    </ul>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                
-                                st.session_state.show_improve_section = False
-                                st.rerun()
-                            else:
-                                st.markdown(f"""
-                                <div class="message message-error">
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span style="font-size: 1.5rem;">❌</span>
-                                        <div>
-                                            <div style="font-weight: 700; margin-bottom: 0.25rem;">Learning Error</div>
-                                            <div style="font-size: 0.9rem; opacity: 0.9;">{improvement_result.get('error', 'Unknown error')}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                """, unsafe_allow_html=True)
+                                    st.error(f"❌ Error: {improvement_result.get('error', 'Unknown error occurred')}")
                 
                 if st.button("🔄 Reset", key="reset_btn", use_container_width=True):
                     st.session_state.show_improve_section = False
                     st.rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Training progress monitoring
+    if 'training_active' in st.session_state and st.session_state.training_active:
+        rtl = st.session_state.real_time_learning_system
+        
+        if rtl.is_training():
+            st.markdown("### 🔄 Training Progress")
+            progress_placeholder = st.empty()
+            
+            # Continuous monitoring with auto-refresh
+            import time
+            
+            # Get current progress
+            progress = rtl.get_training_progress()
+            
+            if progress['status'] == 'training':
+                if progress['total_epochs'] > 0:
+                    epoch_progress = progress['epoch'] / progress['total_epochs']
+                    # Ensure progress is within valid range [0.0, 1.0]
+                    epoch_progress = max(0.0, min(1.0, epoch_progress))
+                    progress_placeholder.progress(epoch_progress, text=f"Epoch {progress['epoch']}/{progress['total_epochs']} - Loss: {progress['loss']:.4f}")
+                    
+                    # Auto-refresh every 0.5 seconds to show real-time progress
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    progress_placeholder.text("🔄 Training in progress...")
+                    time.sleep(0.5)
+                    st.rerun()
+            elif progress['status'] == 'completed':
+                progress_placeholder.success("✅ Training completed!")
+                
+                # Force a small delay to ensure training is fully complete
+                time.sleep(1)
+                
+                # Update prediction immediately after training
+                updated_result = rtl.predict_with_learning(st.session_state.training_image)
+                updated_prediction = updated_result["prediction"]
+                
+                # Store the updated prediction in session state for display
+                st.session_state.updated_prediction = updated_prediction
+                st.session_state.prediction_updated = True
+                
+                # Show prominent success message
+                st.markdown("""
+                <div class="message message-success" style="margin: 2rem 0; padding: 2rem; border-radius: 12px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1)); border: 2px solid #22c55e;">
+                    <div style="display: flex; align-items: center; gap: 1rem; text-align: center;">
+                        <span style="font-size: 3rem;">🎉</span>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #22c55e;">Training Completed Successfully!</div>
+                            <div style="font-size: 1.1rem; opacity: 0.9;">All 20 epochs completed. Model has learned from your feedback.</div>
+                            <div style="font-size: 1rem; opacity: 0.8; margin-top: 0.5rem;">The prediction result has been updated below.</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Update the prediction display with prominent styling
+                updated_prediction_text = "🔴 FAKE DETECTED" if updated_prediction == "fake" else "🟢 REAL DETECTED"
+                updated_prediction_class = "prediction-fake" if updated_prediction == "fake" else "prediction-real"
+                
+                st.markdown(f"""
+                <div class="prediction-result {updated_prediction_class}" style="padding: 2rem; text-align: center; margin: 2rem 0; border: 3px solid {'#ef4444' if updated_prediction == 'fake' else '#10b981'}; border-radius: 12px; background: rgba(31, 41, 55, 0.95); box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+                    <div style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+                        {updated_prediction_text}
+                    </div>
+                    <div style="font-size: 1.2rem; opacity: 0.9; margin-top: 0.5rem;">
+                        ✅ Result Updated After Training
+                    </div>
+                    <div style="font-size: 1rem; opacity: 0.7; margin-top: 0.5rem;">
+                        Model learned from your feedback
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Reset training state
+                st.session_state.training_active = False
+                st.session_state.show_improve_section = False
+                st.rerun()
+                
+            elif progress['status'] == 'error':
+                progress_placeholder.error("❌ Training failed!")
+                st.session_state.training_active = False
+        else:
+            # Training completed but not detected by is_training()
+            st.session_state.training_active = False
 
 else:
     # Landing page
