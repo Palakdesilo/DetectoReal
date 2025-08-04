@@ -708,29 +708,53 @@ class RLHFImageClassifier:
     def _save_persistent_data_to_files(self):
         """Save persistent data to files for cross-session persistence"""
         try:
-            # Save learned model to file
-            torch.save(self.model.state_dict(), self.learned_model_path)
-            print(f"💾 Learned model saved to {self.learned_model_path}")
+            # Save learned model to file with better error handling
+            try:
+                torch.save(self.model.state_dict(), self.learned_model_path)
+                print(f"💾 Learned model saved to {self.learned_model_path}")
+                
+                # Verify the save was successful
+                if os.path.exists(self.learned_model_path):
+                    file_size = os.path.getsize(self.learned_model_path)
+                    print(f"✅ Model save verified: {file_size:,} bytes")
+                else:
+                    print("❌ Model save failed - file not created")
+                    
+            except Exception as e:
+                print(f"❌ Error saving learned model: {e}")
+                # Try alternative save location
+                try:
+                    alt_path = f"backup_{self.learned_model_path}"
+                    torch.save(self.model.state_dict(), alt_path)
+                    print(f"💾 Learned model saved to backup: {alt_path}")
+                except Exception as backup_e:
+                    print(f"❌ Backup save also failed: {backup_e}")
             
             # Save vector database to file
-            vector_db_data = {
-                'features': self.vector_db.features,
-                'labels': self.vector_db.labels,
-                'timestamps': self.vector_db.timestamps
-            }
-            with open(self.vector_db_path, 'wb') as f:
-                pickle.dump(vector_db_data, f)
-            print(f"💾 Vector database saved to {self.vector_db_path}")
+            try:
+                vector_db_data = {
+                    'features': self.vector_db.features,
+                    'labels': self.vector_db.labels,
+                    'timestamps': self.vector_db.timestamps
+                }
+                with open(self.vector_db_path, 'wb') as f:
+                    pickle.dump(vector_db_data, f)
+                print(f"💾 Vector database saved to {self.vector_db_path}")
+            except Exception as e:
+                print(f"❌ Error saving vector database: {e}")
             
             # Save feedback dataset to file
-            feedback_dataset_data = {
-                'images': self.feedback_dataset.images,
-                'labels': self.feedback_dataset.labels,
-                'features': self.feedback_dataset.features
-            }
-            with open(self.feedback_dataset_path, 'wb') as f:
-                pickle.dump(feedback_dataset_data, f)
-            print(f"💾 Feedback dataset saved to {self.feedback_dataset_path}")
+            try:
+                feedback_dataset_data = {
+                    'images': self.feedback_dataset.images,
+                    'labels': self.feedback_dataset.labels,
+                    'features': self.feedback_dataset.features
+                }
+                with open(self.feedback_dataset_path, 'wb') as f:
+                    pickle.dump(feedback_dataset_data, f)
+                print(f"💾 Feedback dataset saved to {self.feedback_dataset_path}")
+            except Exception as e:
+                print(f"❌ Error saving feedback dataset: {e}")
             
         except Exception as e:
             print(f"⚠️ Warning: Could not save persistent data to files: {e}")

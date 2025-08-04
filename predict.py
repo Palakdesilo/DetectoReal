@@ -35,6 +35,33 @@ CLASS_NAMES = ['fake', 'real']
 # Force CPU usage for consistent results between local and cloud
 device = torch.device("cpu")
 
+# Add environment detection
+def detect_environment():
+    """Detect if running in cloud or local environment"""
+    import os
+    import platform
+    
+    env_info = {
+        'platform': platform.system(),
+        'python_version': platform.python_version(),
+        'torch_version': torch.__version__,
+        'cuda_available': torch.cuda.is_available(),
+        'working_dir': os.getcwd(),
+        'is_cloud': 'STREAMLIT_SERVER' in os.environ or 'STREAMLIT_CLOUD' in os.environ
+    }
+    
+    print(f"🌍 Environment: {'Cloud' if env_info['is_cloud'] else 'Local'}")
+    print(f"📊 Platform: {env_info['platform']}")
+    print(f"🐍 Python: {env_info['python_version']}")
+    print(f"🔥 PyTorch: {env_info['torch_version']}")
+    print(f"💻 CUDA: {'Available' if env_info['cuda_available'] else 'Not Available'}")
+    print(f"📁 Working Dir: {env_info['working_dir']}")
+    
+    return env_info
+
+# Detect environment on startup
+env_info = detect_environment()
+
 # === LOAD MODEL ONCE ===
 model = None
 
@@ -46,18 +73,27 @@ def load_model(model_path=None):
         return model
     
     try:
-        # Try to load learned model first, then fallback to original model
-        model_paths = ['learned_model.pth', 'model.pth']
+        # ALWAYS try to load learned model first - this is the key fix
+        if os.path.exists('learned_model.pth'):
+            print(f"📊 Loading LEARNED model from: learned_model.pth")
+            model = SimpleCNN(num_classes=2)
+            model.to(device)
+            state_dict = torch.load('learned_model.pth', map_location=device)
+            model.load_state_dict(state_dict)
+            model.eval()
+            print("✅ Successfully loaded learned model")
+            return model
         
-        for path in model_paths:
-            if os.path.exists(path):
-                print(f"📊 Loading model from: {path}")
-                model = SimpleCNN(num_classes=2)
-                model.to(device)
-                state_dict = torch.load(path, map_location=device)
-                model.load_state_dict(state_dict)
-                model.eval()
-                return model
+        # Only fallback to original model if learned model doesn't exist
+        if os.path.exists('model.pth'):
+            print(f"📊 Loading ORIGINAL model from: model.pth")
+            model = SimpleCNN(num_classes=2)
+            model.to(device)
+            state_dict = torch.load('model.pth', map_location=device)
+            model.load_state_dict(state_dict)
+            model.eval()
+            print("✅ Successfully loaded original model")
+            return model
         
         # If no model files found, create a fresh model
         print("🔄 Creating fresh model (no files found)")
