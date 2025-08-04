@@ -252,22 +252,22 @@ check_deployment.py
 FEEDBACK_GUIDE.md
 DEPLOYMENT_GUIDE.md
 
-# Model files (can be large and regenerated)
-model_backup.pth
-model_retrained.pth
-real_vs_fake.keras
-real_vs_fake.h5
-model_backup_20250731_140408.pth
-model_backup_20250731_140900.pth
-*.pth
-*.pt
-*.h5
-*.keras
-*.pkl
-*.joblib
-*.onnx
-*.tflite
-*.pb
+# Model files (can be large and regenerated) - COMMENTED OUT FOR CLOUD DEPLOYMENT
+# model_backup.pth
+# model_retrained.pth
+# real_vs_fake.keras
+# real_vs_fake.h5
+# model_backup_20250731_140408.pth
+# model_backup_20250731_140900.pth
+# *.pth
+# *.pt
+# *.h5
+# *.keras
+# *.pkl
+# *.joblib
+# *.onnx
+# *.tflite
+# *.pb
 
 # Large dataset files (exceed GitHub's 100MB limit)
 feedback_dataset.pkl
@@ -301,9 +301,9 @@ retrain_model.py
 *.bin
 *.safetensors
 *.ckpt
-*.pkl
-*.pickle
-*.joblib
+# *.pkl  # Commented out to allow learned model files
+# *.pickle
+# *.joblib
 *.npy
 *.npz
 
