@@ -25,17 +25,42 @@ The model's learning from user feedback was not persisting after page refresh. W
 
 ## Installation
 
-### 1. Install Dependencies
+### 1. Prerequisites
+- Python 3.8 or higher (built-in `pickle` module used)
+- Git (for cloning the repository)
+
+### 2. Clone and Setup
+```bash
+git clone <repository-url>
+cd DETECTOREAL
+```
+
+### 3. Create and Activate a Virtual Environment
+```bash
+# Windows (PowerShell)
+python -m venv myenv
+myenv\Scripts\Activate.ps1
+
+# Windows (Command Prompt)
+python -m venv myenv
+myenv\Scripts\activate.bat
+
+# macOS/Linux
+python3 -m venv myenv
+source myenv/bin/activate
+```
+
+### 4. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run the Application
+### 5. Run the Application
 ```bash
 streamlit run app.py
 ```
 
-### 3. Use the Learning System
+### 6. Use the Learning System
 1. Upload an image using the drag-and-drop interface
 2. View the initial prediction with confidence score
 3. Provide feedback if the prediction is incorrect
@@ -46,20 +71,25 @@ streamlit run app.py
 ## Project Structure
 
 ```
-archive/
+DETECTOREAL/
 ├── app.py                                    # Main Streamlit application
 ├── real_time_learning_enhanced_simple.py    # RLHF classifier
 ├── enhanced_feedback.py                     # Feedback collection system
 ├── model.py                                 # CNN model architecture
 ├── predict.py                               # Prediction functions
 ├── utils.py                                 # Utility functions
+├── retrain_model.py                         # Model retraining script
 ├── requirements.txt                         # Python dependencies
-├── model.pth                               # Original trained model
-├── learned_model.pth                       # Learned model
-├── vector_db.pkl                           # Vector database
-├── feedback_dataset.pkl                    # Feedback dataset
-├── feedback_data/                          # Detailed feedback storage
-├── real_vs_fake/                          # Training data structure
+├── model.pth                                # Original trained model
+├── learned_model.pth                        # Learned model (fine-tuned)
+├── reward_model.pth                         # Reward model
+├── model_rlhf.pth                           # RLHF fine-tuned model
+├── vector_db.pkl                            # Vector database for similarity
+├── feedback_dataset.pkl                     # Feedback dataset storage
+├── feedback_data/                           # Detailed feedback storage
+├── myenv/                                   # Virtual environment
+├── .gitignore                               # Git ignore rules
+├── .gitattributes                           # Git attributes
 └── README.md                               # This file
 ```
 
@@ -110,18 +140,20 @@ pickle.dump(feedback_dataset, 'feedback_dataset.pkl')
 
 ## Deployment
 
-### Local Development
-```bash
-# Create virtual environment
-python -m venv myenv
-source myenv/bin/activate  # On Windows: myenv\Scripts\activate
+### Local Development (recap)
+1) Create venv and activate (see above)
+2) Install dependencies: `pip install -r requirements.txt`
+3) Run: `streamlit run app.py`
 
-# Install dependencies
-pip install -r requirements.txt
+### Troubleshooting
+- **Editor Import Error**: If your editor shows "Import \"streamlit\" could not be resolved":
+  - Ensure your interpreter is the venv (`myenv`). In VS Code/Cursor, select `myenv` as Python interpreter.
+  - Install deps again inside venv: `pip install -r requirements.txt`.
+  - Verify import works: `python -c "import streamlit; print(streamlit.__version__)"`.
 
-# Run application
-streamlit run app.py
-```
+- **Model Files**: Ensure all `.pth` model files are present in the project root
+- **Memory Issues**: Large model files (~8MB each) may take time to load on first run
+- **CUDA Support**: GPU acceleration available if CUDA-compatible PyTorch is installed
 
 ### Streamlit Cloud Deployment
 1. Push to GitHub repository

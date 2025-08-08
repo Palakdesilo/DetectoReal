@@ -459,7 +459,7 @@ if uploaded_file is not None:
         
         # Display image
         image = Image.open(uploaded_file)
-        resized_image = image.resize((150, 150))
+        resized_image = image.resize((200, 200))
         st.image(resized_image, caption="Uploaded Image")
         
         # Get prediction with real-time learning
